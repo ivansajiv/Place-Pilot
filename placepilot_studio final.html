@@ -1,0 +1,2427 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="studio">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>PlacePilot – Placement Co-Pilot</title>
+<!-- Google Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+
+<!-- PDF.js for client-side PDF text extraction -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+  if (typeof pdfjsLib !== 'undefined') {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  }
+</script>
+<!-- Mammoth.js for client-side DOCX text extraction -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+<!-- Alpine.js -->
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
+
+<style>
+/* ==========================================================================
+   THEME DESIGN TOKENS & BASE STYLES
+   ========================================================================== */
+:root {
+  --soft-sage: #7F8C6A;
+  --espresso: #4E2C23;
+  --accent-ink: #1b2117;
+  --bg-base: #fcfbf7;
+  --bg-sidebar: rgba(255, 255, 255, 0.98);
+  --bg-surface: #ffffff;
+  --bg-card: rgba(255, 255, 255, 0.96);
+  --bg-card-hover: #fffefa;
+  --bg-card-solid: #ffffff;
+  --bg-input: #fbfaf6;
+  --bg-chip: #f3efe5;
+  --bg-chip-hover: #ebe4d5;
+
+  --border: #e6dfd1;
+  --border-subtle: #f0ece3;
+  --border-hover: #cfc3a7;
+  --border-active: #7F8C6A;
+
+  --text-main: var(--espresso);
+  --text-dim: #5f5548;
+  --text-muted: #827764;
+  --text-faint: #a49a85;
+
+  --accent: #4f5d3d;
+  --accent-light: var(--soft-sage);
+  --accent-gradient: linear-gradient(135deg, #7F8C6A 0%, #9ca988 52%, #7F8C6A 100%);
+  --accent-soft: rgba(127, 140, 106, 0.16);
+  --cyan: #59694a;
+  --cyan-soft: rgba(127, 140, 106, 0.14);
+  --success: #4d7042;
+  --success-bg: rgba(77, 112, 66, 0.1);
+  --success-border: rgba(77, 112, 66, 0.25);
+  --warning: #8b6819;
+  --warning-bg: rgba(139, 104, 25, 0.1);
+  --warning-border: rgba(139, 104, 25, 0.25);
+  --danger: #a34832;
+  --danger-bg: rgba(163, 72, 50, 0.1);
+  --danger-border: rgba(163, 72, 50, 0.24);
+
+  --radius-xs: 8px;
+  --radius-sm: 12px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
+
+  --shadow-sm: 0 1px 3px rgba(78, 44, 35, 0.05);
+  --shadow-md: 0 8px 24px -4px rgba(78, 44, 35, 0.07), 0 2px 6px -2px rgba(78, 44, 35, 0.04);
+  --shadow-lg: 0 20px 40px -12px rgba(95, 75, 40, 0.13), 0 2px 6px rgba(78, 44, 35, 0.05);
+  --shadow-glow: 0 8px 25px -4px rgba(127, 140, 106, 0.34);
+  box-sizing: border-box;
+}
+
+:root[data-theme="twilight"] {
+  --bg-base: #201a14;
+  --bg-sidebar: rgba(45, 36, 27, 0.98);
+  --bg-surface: #382e22;
+  --bg-card: rgba(56, 46, 34, 0.96);
+  --bg-card-hover: #483b2c;
+  --bg-card-solid: #382e22;
+  --bg-input: #2a2219;
+  --bg-chip: #4a3d2e;
+  --bg-chip-hover: #5a4b3a;
+  --border: rgba(255, 255, 255, 0.14);
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-hover: rgba(127, 140, 106, 0.38);
+  --border-active: #7F8C6A;
+  --text-main: #fffdf5;
+  --text-dim: #eee5d1;
+  --text-muted: #c8bda6;
+  --text-faint: #a99a7e;
+  --accent: #e4eadb;
+  --accent-light: #7F8C6A;
+  --accent-gradient: linear-gradient(135deg, #7F8C6A 0%, #a1ad91 52%, #7F8C6A 100%);
+  --accent-soft: rgba(127, 140, 106, 0.22);
+  --shadow-md: 0 10px 30px -10px rgba(0, 0, 0, 0.30);
+  --shadow-lg: 0 20px 40px -15px rgba(0, 0, 0, 0.42);
+  --shadow-glow: 0 8px 25px -4px rgba(127, 140, 106, 0.30);
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-main);
+  background-color: var(--bg-base);
+  background-image:
+    radial-gradient(at 0% 0%, rgba(127, 140, 106, 0.10) 0px, transparent 42%),
+    radial-gradient(at 100% 8%, rgba(255, 255, 255, 0.85) 0px, transparent 38%),
+    radial-gradient(at 65% 100%, rgba(79, 93, 61, 0.05) 0px, transparent 42%);
+  background-attachment: fixed;
+  min-height: 100vh;
+  position: relative;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+[x-cloak] { display: none !important; }
+
+#auth-view { display: flex !important; }
+body[data-authed="true"] #auth-view { display: none !important; }
+
+::-webkit-scrollbar { width: 7px; height: 7px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-hover); border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+
+h1, h2, h3, h4 { color: var(--text-main); font-weight: 700; margin: 0 0 8px; letter-spacing: -0.02em; }
+h1 { font-size: 24px; line-height: 1.25; }
+h2 { font-size: 17px; }
+h3 { font-size: 15px; }
+p { margin: 0 0 10px; color: var(--text-dim); }
+.mu { color: var(--text-muted); font-size: 13px; }
+.faint { color: var(--text-faint); font-size: 12px; }
+
+.gradient-text {
+  background: var(--accent-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  display: inline-block;
+}
+
+/* ==========================================================================
+   APP LAYOUT & SIDEBAR DOCK
+   ========================================================================== */
+.app-layout {
+  display: flex;
+  min-height: 100vh;
+  width: 100%;
+  max-width: 100vw;
+  min-width: 0;
+  overflow-x: clip;
+}
+
+.sidebar-dock {
+  width: 270px;
+  background: var(--bg-sidebar);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 24px 16px;
+  position: fixed;
+  top: 0; bottom: 0; left: 0;
+  z-index: 100;
+  box-shadow: 4px 0 24px rgba(78, 44, 35, 0.05);
+}
+
+.main-content {
+  margin-left: 270px;
+  flex: 1 1 0%;
+  min-width: 0;
+  width: 0;
+  padding: clamp(18px, 2.2vw, 32px) clamp(16px, 2.5vw, 36px) 80px;
+  max-width: none;
+}
+
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 8px 20px;
+  border-bottom: 1px solid var(--border);
+}
+.brand-icon-box {
+  width: 40px; height: 40px;
+  border-radius: var(--radius-sm);
+  background: var(--accent-gradient);
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-size: 20px;
+  box-shadow: var(--shadow-glow);
+}
+.brand-title { font-weight: 800; font-size: 18px; line-height: 1.2; }
+.brand-sub { font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+
+.sidebar-nav { display: flex; flex-direction: column; gap: 6px; margin-top: 16px; }
+.sidebar-nav button {
+  border: 0; background: transparent;
+  color: var(--text-dim); padding: 11px 14px;
+  border-radius: var(--radius-sm);
+  font: inherit; font-size: 13.5px; font-weight: 600;
+  cursor: pointer; display: flex; align-items: center; gap: 12px;
+  transition: all 0.2s ease; text-align: left; position: relative;
+}
+.sidebar-nav button:hover { background: var(--bg-chip); color: var(--text-main); transform: translateX(2px); }
+.sidebar-nav button.on {
+  background: var(--accent-soft); color: var(--accent);
+  border: 1px solid rgba(127, 140, 106, 0.22); box-shadow: var(--shadow-sm);
+}
+.sidebar-nav button.on::before {
+  content: ""; position: absolute; left: 0; top: 8px; bottom: 8px; width: 4px;
+  border-radius: 99px; background: var(--accent-gradient);
+}
+.tab-icon { font-size: 16px; width: 22px; text-align: center; }
+
+.sidebar-readiness {
+  background: linear-gradient(135deg, rgba(127, 140, 106, 0.08) 0%, rgba(255, 255, 255, 0.35) 100%);
+  border: 1px solid rgba(127, 140, 106, 0.18);
+  border-radius: var(--radius-sm);
+  padding: 14px; margin: 16px 0;
+}
+.sidebar-bottom { border-top: 1px solid var(--border); padding-top: 16px; }
+.user-badge {
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--bg-chip); padding: 8px 12px; border-radius: var(--radius-sm); margin-bottom: 10px;
+}
+
+@media(max-width: 900px) {
+  .sidebar-dock {
+    width: 100%; height: auto; top: auto; bottom: 0; left: 0; right: 0;
+    flex-direction: row; padding: 8px 12px; border-right: none; border-top: 1px solid var(--border);
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.06); overflow-x: auto;
+  }
+  .sidebar-top, .sidebar-bottom, .sidebar-readiness { display: none !important; }
+  .sidebar-nav { display: flex !important; flex-direction: row !important; width: 100%; justify-content: space-around; gap: 4px !important; }
+  .sidebar-nav button { flex-direction: column !important; padding: 6px 8px !important; font-size: 10.5px !important; gap: 3px !important; }
+  .sidebar-nav button span.tab-title { font-size: 10px; }
+  .main-content { margin-left: 0 !important; width: 100%; padding: 16px 16px 100px !important; }
+}
+
+/* ==========================================================================
+   CARDS, BUTTONS & FORM INPUTS
+   ========================================================================== */
+.card {
+  background: var(--bg-card);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 22px;
+  box-shadow: var(--shadow-md);
+  transition: all 0.25s ease;
+  position: relative;
+}
+.card:hover { border-color: var(--border-hover); box-shadow: var(--shadow-lg); }
+
+.command-hero {
+  color: #4E2C23 !important;
+  background: radial-gradient(circle at 88% 18%, rgba(127, 140, 106, 0.25), transparent 28%), linear-gradient(120deg, #ffffff 0%, #fbf9f3 62%, #f2eee4 100%) !important;
+  border-color: rgba(127, 140, 106, 0.46) !important;
+  box-shadow: 0 22px 50px -24px rgba(78, 44, 35, 0.18) !important;
+}
+
+.g { display: grid; gap: 20px; grid-template-columns: 1fr; }
+.g2 { display: grid; gap: 20px; grid-template-columns: 1fr; }
+.g4 { display: grid; gap: 16px; grid-template-columns: 1fr; }
+.g-dash { display: grid; gap: 20px; grid-template-columns: 1fr; }
+
+@media(min-width: 960px) {
+  .g { grid-template-columns: minmax(320px, 380px) minmax(0, 1fr); }
+  .g2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .g-dash { grid-template-columns: minmax(0, 1.4fr) minmax(320px, 0.9fr); }
+  .g4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+.row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.sp { justify-content: space-between; }
+
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 9px 16px; border-radius: var(--radius-xs);
+  font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer;
+  text-decoration: none; background: var(--bg-chip); color: var(--text-main);
+  border: 1px solid var(--border); box-shadow: var(--shadow-sm); transition: all 0.2s ease;
+  user-select: none;
+}
+.btn:hover { background: var(--bg-chip-hover); border-color: var(--border-hover); transform: translateY(-1px); }
+.btn.p { background: var(--accent-gradient); border: 1px solid rgba(78, 44, 35, 0.12); color: var(--accent-ink); box-shadow: var(--shadow-glow); font-weight: 700; }
+.btn.p:hover { box-shadow: 0 10px 28px -4px rgba(127, 140, 106, 0.36); }
+.btn.outline { background: transparent; border-color: var(--border); color: var(--text-dim); }
+.btn.danger { background: var(--danger-bg); border-color: var(--danger-border); color: var(--danger); }
+
+textarea, input[type="text"], input[type="email"], select {
+  width: 100%; font-family: inherit; font-size: 13.5px; color: var(--text-main);
+  background: var(--bg-input); border: 1px solid var(--border); border-radius: var(--radius-xs);
+  padding: 11px 14px; outline: none; transition: all 0.2s ease;
+}
+textarea:focus, input:focus, select:focus { border-color: var(--accent); background: var(--bg-card-solid); box-shadow: 0 0 0 3px rgba(127, 140, 106, 0.18); }
+textarea { resize: vertical; min-height: 120px; line-height: 1.6; }
+textarea.mono { font-family: 'JetBrains Mono', monospace; font-size: 12.5px; }
+
+.chip {
+  display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px;
+  border-radius: 99px; background: var(--bg-chip); border: 1px solid var(--border);
+  font-size: 12px; font-weight: 600; color: var(--text-dim);
+}
+.chip.y { background: var(--success-bg); color: var(--success); border-color: var(--success-border); }
+.chip.n { background: var(--warning-bg); color: var(--warning); border-color: var(--warning-border); }
+.chip.danger { background: var(--danger-bg); color: var(--danger); border-color: var(--danger-border); }
+.chip.accent { background: var(--accent-soft); color: var(--accent); border-color: rgba(127, 140, 106, 0.25); }
+
+.meter { height: 8px; background: var(--bg-chip); border-radius: 99px; overflow: hidden; position: relative; }
+.meter i { display: block; height: 100%; background: var(--accent-gradient); border-radius: 99px; transition: width 0.5s ease; }
+.sc { font-size: 26px; font-weight: 800; font-family: 'JetBrains Mono', monospace; background: var(--accent-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+
+/* ==========================================================================
+   CALENDAR GRID
+   ========================================================================== */
+.cal-container {
+  width: 100%;
+  overflow-x: auto;
+  min-width: 0;
+}
+.cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 6px;
+  width: 100%;
+  box-sizing: border-box;
+}
+.cal-header-day {
+  font-weight: 700;
+  font-size: 11px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  padding: 6px 2px;
+  text-align: center;
+}
+.cal-day {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xs);
+  padding: 6px 6px;
+  min-height: 82px;
+  font-size: 11.5px;
+  text-align: left;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+.cal-day:hover {
+  border-color: var(--accent-light);
+  background: var(--bg-card);
+  transform: translateY(-1px);
+}
+.cal-day.empty-day {
+  background: rgba(0,0,0,0.01);
+  border-color: transparent;
+  cursor: default;
+}
+.cal-day.has-event {
+  background: rgba(127, 140, 106, 0.08);
+  border-color: rgba(127, 140, 106, 0.3);
+}
+.cal-day.active-selected {
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 12px rgba(127, 140, 106, 0.25);
+  background: rgba(127, 140, 106, 0.14) !important;
+}
+
+.cal-event-pill {
+  display: block;
+  margin-top: 3px;
+  font-size: 9.5px;
+  padding: 2px 5px;
+  border-radius: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+  max-width: 100%;
+}
+
+/* ==========================================================================
+   RESUME TEMPLATES
+   ========================================================================== */
+.template-card {
+  border: 2px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 14px;
+  background: var(--bg-card-solid);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+.template-card:hover { border-color: var(--accent-light); transform: translateY(-2px); }
+.template-card.active { border-color: var(--accent); background: rgba(127, 140, 106, 0.07); box-shadow: var(--shadow-glow); }
+
+.pdf-page-container {
+  background: #525659;
+  padding: 24px;
+  border-radius: var(--radius-xs);
+  display: flex;
+  justify-content: center;
+  overflow-x: auto;
+}
+
+.pdf-page {
+  width: 100%;
+  max-width: 794px;
+  min-height: 1000px;
+  background: #ffffff;
+  color: #1a1a1a;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+  padding: 48px 52px;
+  box-sizing: border-box;
+  font-size: 13px;
+  line-height: 1.5;
+  transition: all 0.3s ease;
+}
+
+.pdf-page.tpl-modern {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  border-top: 8px solid #4f5d3d;
+}
+.pdf-page.tpl-modern h1 { font-size: 26px; color: #2d3725; margin-bottom: 2px; }
+.pdf-page.tpl-modern .sub-heading { color: #4f5d3d; font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 2px solid #e2e8db; padding-bottom: 4px; margin: 18px 0 10px; }
+
+.pdf-page.tpl-classic {
+  font-family: 'Playfair Display', Georgia, serif;
+  text-align: left;
+}
+.pdf-page.tpl-classic h1 { font-size: 28px; text-align: center; color: #111; letter-spacing: 0.02em; margin-bottom: 4px; }
+.pdf-page.tpl-classic .contact-bar { text-align: center; font-family: sans-serif; font-size: 11px; color: #555; border-bottom: 1px solid #111; padding-bottom: 10px; margin-bottom: 16px; }
+.pdf-page.tpl-classic .sub-heading { font-size: 15px; text-transform: uppercase; border-bottom: 1px solid #ccc; padding-bottom: 2px; margin: 18px 0 8px; font-weight: 700; color: #222; }
+
+.pdf-page.tpl-minimal {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  color: #2b2b2b;
+}
+.pdf-page.tpl-minimal h1 { font-size: 24px; font-weight: 800; color: #000; margin-bottom: 2px; }
+.pdf-page.tpl-minimal .sub-heading { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.12em; color: #777; margin: 20px 0 6px; }
+
+.pdf-page.tpl-creative {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 28px;
+  padding: 0;
+}
+.pdf-page.tpl-creative .side-col { background: #f4f6f1; padding: 40px 24px; border-right: 1px solid #e1e7da; }
+.pdf-page.tpl-creative .main-col { padding: 40px 32px 40px 0; }
+.pdf-page.tpl-creative h1 { font-size: 22px; color: #364426; }
+.pdf-page.tpl-creative .sub-heading { font-size: 13px; font-weight: 700; color: #4f5d3d; border-bottom: 1.5px solid #4f5d3d; padding-bottom: 3px; margin: 16px 0 8px; }
+
+.pdf-page.tpl-slate {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  color: #1e293b;
+}
+.pdf-page.tpl-slate .header-banner { background: #1e293b; color: #fff; padding: 24px; border-radius: 6px; margin-bottom: 20px; }
+.pdf-page.tpl-slate .header-banner h1 { color: #fff; margin: 0; }
+.pdf-page.tpl-slate .sub-heading { font-size: 13px; font-weight: 700; color: #1e293b; background: #f1f5f9; padding: 4px 8px; border-left: 4px solid #3b82f6; margin: 18px 0 8px; }
+
+.job { display: flex; gap: 16px; justify-content: space-between; flex-wrap: wrap; margin-bottom: 14px; border-radius: var(--radius-md); position: relative; overflow: hidden; }
+.job.top { border-color: rgba(127, 140, 106, 0.30); background: linear-gradient(180deg, rgba(127, 140, 106, 0.05) 0%, var(--bg-card) 40%); box-shadow: 0 10px 30px -10px rgba(127, 140, 106, 0.18); }
+.job.top::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--accent-gradient); }
+
+.stat-tile { background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; box-shadow: var(--shadow-sm); }
+.stat-val { font-size: 22px; font-weight: 800; font-family: 'JetBrains Mono', monospace; }
+
+.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(24px + env(safe-area-inset-bottom, 0px)); background: rgba(78, 44, 35, 0.94); backdrop-filter: blur(16px); color: #ffffff; border: 1px solid rgba(255, 255, 255, 0.15); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25); padding: 10px 22px; border-radius: 99px; z-index: 999; font-weight: 600; font-size: 13px; }
+
+.upload-zone { border: 2px dashed rgba(127, 140, 106, 0.30); background: rgba(127, 140, 106, 0.04); border-radius: var(--radius-md); padding: 24px 16px; text-align: center; transition: all 0.2s ease; }
+.upload-zone:hover { border-color: var(--accent); background: rgba(127, 140, 106, 0.08); }
+
+.approval-box { background: linear-gradient(135deg, rgba(127, 140, 106, 0.08) 0%, rgba(127, 140, 106, 0.05) 100%); border: 1px solid rgba(127, 140, 106, 0.25); padding: 16px; border-radius: var(--radius-sm); margin: 16px 0; display: flex; align-items: flex-start; gap: 12px; }
+.approval-box input[type="checkbox"] { width: 18px; height: 18px; margin-top: 3px; accent-color: var(--accent); }
+
+/* ==========================================================================
+   AI ASSISTANT CHATBOT STYLES
+   ========================================================================== */
+.chat-launcher-btn {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 1050;
+  height: 54px;
+  padding: 0 20px;
+  border-radius: 99px;
+  background: var(--accent-gradient);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #1a2215;
+  font-weight: 700;
+  font-size: 13.5px;
+  box-shadow: 0 12px 35px -6px rgba(127, 140, 106, 0.55), 0 4px 12px rgba(78, 44, 35, 0.15);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.chat-launcher-btn:hover {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 16px 40px -4px rgba(127, 140, 106, 0.65);
+}
+.chat-pulse-dot {
+  width: 9px;
+  height: 9px;
+  background: #34d399;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px rgba(52, 211, 153, 0.4);
+  animation: pulse-ring 2s infinite;
+}
+@keyframes pulse-ring {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.7); }
+  70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(52, 211, 153, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(52, 211, 153, 0); }
+}
+
+.chat-window {
+  position: fixed;
+  right: 24px;
+  bottom: 90px;
+  width: 380px;
+  max-width: calc(100vw - 32px);
+  height: 560px;
+  max-height: calc(100vh - 120px);
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: 0 24px 60px -12px rgba(45, 36, 27, 0.25), 0 4px 16px rgba(0, 0, 0, 0.08);
+  display: flex;
+  flex-direction: column;
+  z-index: 1050;
+  overflow: hidden;
+  backdrop-filter: blur(20px);
+  animation: slide-up-fade 0.25s ease-out;
+}
+@keyframes slide-up-fade {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.chat-header {
+  padding: 14px 16px;
+  background: linear-gradient(135deg, rgba(127, 140, 106, 0.18) 0%, rgba(127, 140, 106, 0.04) 100%);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.chat-messages-area {
+  flex: 1;
+  padding: 16px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: var(--bg-base);
+}
+.chat-bubble {
+  max-width: 85%;
+  padding: 10px 14px;
+  border-radius: 14px;
+  font-size: 13px;
+  line-height: 1.5;
+  word-break: break-word;
+}
+.chat-bubble.bot {
+  align-self: flex-start;
+  background: var(--bg-card-solid);
+  border: 1px solid var(--border);
+  color: var(--text-main);
+  border-bottom-left-radius: 4px;
+  box-shadow: var(--shadow-sm);
+}
+.chat-bubble.user {
+  align-self: flex-end;
+  background: var(--accent-gradient);
+  color: #1a2215;
+  font-weight: 600;
+  border-bottom-right-radius: 4px;
+  box-shadow: 0 4px 14px rgba(127, 140, 106, 0.25);
+}
+.chat-meta {
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-top: 4px;
+  display: block;
+}
+.chat-bubble.user .chat-meta {
+  color: rgba(26, 34, 21, 0.7);
+  text-align: right;
+}
+
+.chat-quick-chips {
+  padding: 8px 12px;
+  background: var(--bg-surface);
+  border-top: 1px solid var(--border-subtle);
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+.chat-quick-pill {
+  border: 1px solid var(--border);
+  background: var(--bg-chip);
+  color: var(--text-dim);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 9px;
+  border-radius: 99px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+.chat-quick-pill:hover {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-color: var(--accent-light);
+}
+
+.chat-input-bar {
+  padding: 12px 14px;
+  background: var(--bg-surface);
+  border-top: 1px solid var(--border);
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.chat-input-bar input {
+  flex: 1;
+  padding: 9px 12px;
+  font-size: 13px;
+  border-radius: 99px;
+}
+.chat-send-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  padding: 0;
+  border: none;
+  background: var(--accent-gradient);
+  color: #1a2215;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 15px;
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+.chat-send-btn:hover {
+  transform: scale(1.08);
+}
+
+@media print {
+  body * { visibility: hidden; }
+  .pdf-page, .pdf-page * { visibility: visible; }
+  .pdf-page { position: absolute; left: 0; top: 0; width: 100%; margin: 0; padding: 20px; box-shadow: none; }
+}
+</style>
+</head>
+
+<body x-data="app()" x-init="init()">
+
+<!-- ==========================================================================
+     SECURE LOGIN / AUTHENTICATION VIEW
+     ========================================================================== -->
+<div x-show="!authed" id="auth-view" style="min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 28px 16px;">
+  <div style="width: 100%; max-width: 1040px; display: grid; grid-template-columns: 1fr; gap: 36px; align-items: center;" class="auth-grid">
+    <style>@media(min-width: 860px) { .auth-grid { grid-template-columns: 1.15fr 1fr !important; } }</style>
+    
+    <div>
+      <div class="row" style="margin-bottom: 12px;">
+        <span class="chip accent" style="padding: 6px 14px; font-weight: 700;">✨ Studio Placement Platform 2.0</span>
+      </div>
+      <h1 style="font-size: 38px; line-height: 1.18; margin-bottom: 16px;">
+        Land Your Dream Placement With <span class="gradient-text">PlacePilot</span>.
+      </h1>
+      <p style="font-size: 15px; color: var(--text-dim); margin-bottom: 24px; max-width: 490px; line-height: 1.6;">
+        Secure student authentication, client-side PDF/DOCX resume extraction, interactive placement drive calendar, strict STAR mock coaching, and a real Gemini AI Co-Pilot.
+      </p>
+
+      <div style="display: flex; flex-direction: column; gap: 14px; margin-bottom: 26px;">
+        <div class="row" style="gap: 12px; align-items: flex-start;">
+          <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(127, 140, 106, 0.15); display: flex; align-items: center; justify-content: center; color: var(--accent); font-size: 16px; flex-shrink: 0;">🛡️</div>
+          <div>
+            <b style="display: block; font-size: 13.5px; color: var(--text-main);">Secure Credential &amp; Password Policy</b>
+            <span class="mu">Enforced password complexity rules, hashed storage, and verified student ID checks.</span>
+          </div>
+        </div>
+        <div class="row" style="gap: 12px; align-items: flex-start;">
+          <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(127, 140, 106, 0.12); display: flex; align-items: center; justify-content: center; color: var(--cyan); font-size: 16px; flex-shrink: 0;">✨</div>
+          <div>
+            <b style="display: block; font-size: 13.5px; color: var(--text-main);">Real Gemini AI Co-Pilot</b>
+            <span class="mu">Context-aware coaching powered by Gemini AI for resume feedback, interview prep, and DSA strategy.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Secure Login / Register Box -->
+    <div class="card" style="padding: 34px 30px; box-shadow: var(--shadow-lg); border-color: rgba(127, 140, 106, 0.25); position: relative; background: var(--bg-card);">
+      <div style="position: absolute; top: -1px; left: 24px; right: 24px; height: 3px; background: var(--accent-gradient);"></div>
+      
+      <div class="row sp" style="margin-bottom: 18px;">
+        <div class="row" style="gap: 10px;">
+          <div class="brand-icon-box">🎯</div>
+          <div>
+            <div style="font-weight: 800; font-size: 16px;">PlacePilot Security</div>
+            <div style="font-size: 11px; color: var(--text-muted);">Verified Student Portal</div>
+          </div>
+        </div>
+        <span class="chip y" style="font-size: 11px;">🔒 Encrypted Session</span>
+      </div>
+
+      <div style="display: flex; background: var(--bg-chip); padding: 4px; border-radius: 9px; margin-bottom: 20px;">
+        <button type="button" @click="authMode = 'signin'; authError = '';" style="flex: 1; border: none; background: transparent; padding: 7px 12px; border-radius: 7px; font-weight: 700; font-size: 12.5px; cursor: pointer; color: var(--text-dim); transition: all 0.2s;" :style="authMode === 'signin' ? 'background: var(--bg-surface); color: var(--accent); box-shadow: var(--shadow-sm);' : ''">
+          Secure Sign In
+        </button>
+        <button type="button" @click="authMode = 'register'; authError = '';" style="flex: 1; border: none; background: transparent; padding: 7px 12px; border-radius: 7px; font-weight: 700; font-size: 12.5px; cursor: pointer; color: var(--text-dim); transition: all 0.2s;" :style="authMode === 'register' ? 'background: var(--bg-surface); color: var(--accent); box-shadow: var(--shadow-sm);' : ''">
+          Register Account
+        </button>
+      </div>
+
+      <div style="margin-bottom: 14px;">
+        <label style="font-size: 12px; font-weight: 600; color: var(--text-dim); display: block; margin-bottom: 6px;">Student ID / Email</label>
+        <div style="position: relative;">
+          <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 14px; opacity: 0.65;">🎓</span>
+          <input type="text" x-model="loginUser" placeholder="e.g. alex.cs@college.edu or ST1024" style="padding-left: 36px;" @keydown.enter="handleAuth()">
+        </div>
+      </div>
+
+      <div style="margin-bottom: 14px;">
+        <label style="font-size: 12px; font-weight: 600; color: var(--text-dim); display: block; margin-bottom: 6px;">Password</label>
+        <div style="position: relative;">
+          <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 14px; opacity: 0.65;">🔒</span>
+          <input :type="showPassword ? 'text' : 'password'" x-model="loginPassword" placeholder="Min 6 chars, letters &amp; numbers" style="padding-left: 36px; padding-right: 38px;" @keydown.enter="handleAuth()">
+          <button type="button" @click="showPassword = !showPassword" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 14px; color: var(--text-muted);">
+            <span x-text="showPassword ? '🙈' : '👁️'"></span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Password Strength Indicator -->
+      <div x-show="authMode === 'register' &amp;&amp; loginPassword.length > 0" style="margin-bottom: 14px;">
+        <div class="row sp" style="font-size: 11px; margin-bottom: 4px;">
+          <span class="mu">Password Security:</span>
+          <span style="font-weight: 700;" :style="passwordStrength.color" x-text="passwordStrength.text"></span>
+        </div>
+        <div class="meter"><i :style="'width: ' + passwordStrength.percent + '%; background: ' + passwordStrength.barColor + ';'"></i></div>
+      </div>
+
+      <div x-show="authError" x-text="authError" style="margin-bottom: 12px; padding: 8px 12px; background: var(--danger-bg); border: 1px solid var(--danger-border); border-radius: var(--radius-xs); color: var(--danger); font-size: 12px; font-weight: 600;"></div>
+
+      <button class="btn p" style="width: 100%; padding: 12px; font-size: 14px; font-weight: 700; border-radius: 9px;" @click="handleAuth()">
+        <span x-text="authMode === 'signin' ? 'Secure Sign In ➔' : 'Create Secure Account ➔'"></span>
+      </button>
+
+      <div style="text-align: center; margin-top: 16px;">
+        <button class="btn outline" style="padding: 5px 12px; font-size: 11px; color: var(--danger);" @click="resetAllData()">🧹 Wipe Storage &amp; Reset</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==========================================================================
+     AUTHENTICATED APPLICATION SHELL
+     ========================================================================== -->
+<div x-show="authed" x-cloak class="app-layout">
+  <!-- SIDEBAR DOCK -->
+  <aside class="sidebar-dock">
+    <div class="sidebar-top">
+      <div class="sidebar-brand">
+        <div class="brand-icon-box">🎯</div>
+        <div>
+          <div class="brand-title">PlacePilot</div>
+          <div class="brand-sub">Placement Co-Pilot</div>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <template x-for="t in tabs" :key="t[0]">
+          <button :class="{on: tab === t[0]}" @click="tab = t[0]">
+            <span class="tab-icon" x-text="getTabIcon(t[0])"></span>
+            <span class="tab-title" x-text="t[1]"></span>
+          </button>
+        </template>
+      </nav>
+
+      <div class="sidebar-readiness">
+        <div class="row sp" style="margin-bottom: 4px;">
+          <span style="font-weight: 700; font-size: 12px;">ATS Readiness</span>
+          <b class="sc" style="font-size: 14px;" x-text="profileScore + '%'"></b>
+        </div>
+        <div class="meter emerald" style="margin-bottom: 6px;"><i :style="'width:' + profileScore + '%'"></i></div>
+        <span class="faint" x-text="profileScore >= 75 ? '★ Highly Competitive' : 'Action Recommended'"></span>
+      </div>
+    </div>
+
+    <div class="sidebar-bottom">
+      <div class="user-badge">
+        <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 150px;">
+          <div style="font-weight: 700; font-size: 12px;" x-text="loginUser || 'Student'"></div>
+          <div style="font-size: 10px; color: var(--text-muted);" x-text="loginUser || 'Student ID'"></div>
+        </div>
+        <button class="btn outline" style="padding: 4px 8px; font-size: 11px;" @click="flip()" :title="theme === 'studio' ? 'Switch to Twilight Mode' : 'Switch to Studio Mode'">
+          <span x-text="theme === 'studio' ? '🌙' : '☀️'"></span>
+        </button>
+      </div>
+
+      <button class="btn danger" style="width: 100%; padding: 8px; font-size: 12px;" @click="logout()">Sign Out Session</button>
+    </div>
+  </aside>
+
+  <!-- MAIN STUDIO CONTENT -->
+  <main class="main-content">
+    <!-- ======================================================================
+         0 · DASHBOARD
+         ====================================================================== -->
+    <section x-show="tab === 'dash'">
+      <div class="card job top command-hero" style="margin-bottom: 24px; padding: 24px;">
+        <div style="flex: 1; min-width: 260px;">
+          <span class="chip accent" style="margin-bottom: 8px;">Placement Command Center</span>
+          <h1 style="font-size: 26px;">Welcome back, <span class="gradient-text" x-text="loginUser || 'Student'"></span>!</h1>
+          <p style="font-size: 14px; color: var(--text-dim); max-width: 600px;">
+            Plan your placement drives, inspect AI resume verification metrics, customize PDF templates, or ask the Gemini Co-Pilot for interview advice anytime.
+          </p>
+          <div class="row" style="margin-top: 14px;">
+            <button class="btn p" @click="tab = 'match'">🎯 Pinpoint Matching Jobs</button>
+            <button class="btn" @click="tab = 'builder'">📄 Open PDF Resume Studio</button>
+            <button class="btn" @click="tab = 'coach'">🎙️ Start AI Mock Interview</button>
+            <button class="btn outline" @click="chatOpen = true">✨ Ask Gemini Co-Pilot</button>
+          </div>
+        </div>
+        <div style="display: flex; flex-direction: column; justify-content: center; align-items: flex-end; min-width: 140px;">
+          <span class="mu" style="font-size: 12px;">READINESS RATING</span>
+          <div class="sc" style="font-size: 38px;" x-text="profileScore + '%'"></div>
+          <span class="chip" :class="profileScore >= 75 ? 'y' : 'n'" x-text="profileScore >= 75 ? '★ Highly Competitive' : 'Action Needed'"></span>
+        </div>
+      </div>
+
+      <!-- KPI Metrics -->
+      <div class="g g4" style="margin-bottom: 24px;">
+        <div class="stat-tile">
+          <div><div class="mu">Readiness Score</div><div class="stat-val" x-text="profileScore + '%'"></div></div>
+          <span class="chip" :class="profileScore >= 75 ? 'y' : 'n'">ATS Verified</span>
+        </div>
+        <div class="stat-tile">
+          <div><div class="mu">Detected Skills</div><div class="stat-val" x-text="skills.length"></div></div>
+          <button class="btn outline" style="padding: 4px 8px; font-size: 11px;" @click="tab = 'match'">Review</button>
+        </div>
+        <div class="stat-tile">
+          <div><div class="mu">Active Applications</div><div class="stat-val" x-text="apps.length"></div></div>
+          <button class="btn outline" style="padding: 4px 8px; font-size: 11px;" @click="tab = 'track'">View</button>
+        </div>
+        <div class="stat-tile">
+          <div><div class="mu">Upcoming Drives</div><div class="stat-val" x-text="upcomingDeadlines.length"></div></div>
+          <span class="chip y">Live Calendar</span>
+        </div>
+      </div>
+
+      <!-- Dashboard Grid -->
+      <div class="g g-dash" style="align-items: flex-start;">
+        <div style="display: flex; flex-direction: column; gap: 20px; min-width: 0;">
+          <div class="card" style="min-width: 0;">
+            <div class="row sp" style="margin-bottom: 14px;">
+              <div>
+                <div class="row" style="gap: 8px;">
+                  <span style="font-size: 20px;">📅</span>
+                  <h2 style="margin: 0; font-size: 17px;">Placement Drive Calendar</h2>
+                </div>
+                <p class="mu" style="margin: 2px 0 0; font-size: 12.5px;">Click any date to view scheduled cutoffs &amp; interviews.</p>
+              </div>
+              <div class="row" style="gap: 6px;">
+                <button class="btn p" style="padding: 5px 12px; font-size: 12px;" @click="addCustomEventPrompt()">+ Add Event</button>
+              </div>
+            </div>
+
+            <!-- Month Switcher -->
+            <div class="row sp" style="background: var(--bg-input); padding: 8px 14px; border-radius: var(--radius-xs); border: 1px solid var(--border); margin-bottom: 12px;">
+              <div class="row" style="gap: 6px;">
+                <button class="btn outline" style="padding: 4px 10px; font-size: 12px;" @click="prevMonth()">◀ Prev</button>
+                <button class="btn outline" style="padding: 4px 10px; font-size: 12px;" @click="nextMonth()">Next ▶</button>
+              </div>
+              <b style="font-size: 15px;" x-text="calTitle()"></b>
+              <button class="btn outline" style="padding: 4px 10px; font-size: 11px;" @click="jumpToToday()">Today</button>
+            </div>
+
+            <div class="cal-container">
+              <div class="cal-grid">
+                <template x-for="d in ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']">
+                  <div class="cal-header-day" x-text="d"></div>
+                </template>
+                <template x-for="(day, idx) in calendarDays" :key="idx">
+                  <div class="cal-day" 
+                       :class="{'empty-day': !day.date, 'has-event': day.events.length, 'active-selected': day.dateStr && selectedDate === day.dateStr}"
+                       @click="day.dateStr && selectDate(day.dateStr)">
+                    <template x-if="day.date">
+                      <div style="width: 100%;">
+                        <div class="row sp" style="margin-bottom: 2px;">
+                          <span style="font-weight: 700; font-size: 11.5px; color: var(--text-dim);" x-text="day.date"></span>
+                          <span x-show="day.events.length" style="width: 6px; height: 6px; border-radius: 99px; background: var(--accent);"></span>
+                        </div>
+                        <template x-for="ev in day.events.slice(0, 2)" :key="ev.id">
+                          <div class="cal-event-pill" 
+                               :class="ev.type === 'Deadline' ? 'n' : 'y'" 
+                               :title="ev.title + ' (' + ev.details + ')'" 
+                               x-text="ev.title"></div>
+                        </template>
+                        <div x-show="day.events.length > 2" class="faint" style="font-size: 9px; margin-top: 1px;" x-text="'+' + (day.events.length - 2) + ' more'"></div>
+                      </div>
+                    </template>
+                  </div>
+                </template>
+              </div>
+            </div>
+          </div>
+
+          <!-- Day Details Inspector -->
+          <div class="card" style="background: rgba(127, 140, 106, 0.04); border-color: rgba(127, 140, 106, 0.22);">
+            <div class="row sp" style="margin-bottom: 10px;">
+              <div>
+                <span class="mu" style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: var(--accent);">Day Inspector</span>
+                <h3 style="margin: 2px 0 0; font-size: 15px;">
+                  📅 <span x-text="selectedDate ? formatFriendlyDate(selectedDate) : 'Click a date on the calendar'"></span>
+                </h3>
+              </div>
+              <button class="btn p" style="padding: 5px 12px; font-size: 12px;" @click="addEventForDate(selectedDate)">+ Add Event</button>
+            </div>
+
+            <div x-show="selectedDateEvents.length" style="display: flex; flex-direction: column; gap: 8px;">
+              <template x-for="ev in selectedDateEvents" :key="ev.id">
+                <div class="row sp" style="padding: 10px 14px; background: var(--bg-card-solid); border: 1px solid var(--border); border-radius: var(--radius-xs);">
+                  <div style="flex: 1;">
+                    <div class="row" style="gap: 6px;">
+                      <span class="chip" :class="ev.type === 'Deadline' ? 'n' : 'y'" x-text="ev.type"></span>
+                      <b style="font-size: 13.5px;" x-text="ev.title"></b>
+                    </div>
+                    <div class="mu" style="font-size: 12px; margin-top: 3px;" x-text="ev.details"></div>
+                  </div>
+                  <div class="row" style="gap: 6px;">
+                    <button class="btn p" style="padding: 4px 10px; font-size: 11px;" x-show="ev.type === 'Deadline'" @click="pick(byName(ev.company || ev.title.split(' ')[0]))">⚡ Tailor</button>
+                    <button class="btn danger" style="padding: 4px 8px; font-size: 11px;" @click="calendarEvents = calendarEvents.filter(x => x.id !== ev.id)">Remove</button>
+                  </div>
+                </div>
+              </template>
+            </div>
+
+            <div x-show="!selectedDateEvents.length" class="mu" style="font-size: 12.5px; padding: 4px 0;">
+              No events for this date. Click "+ Add Event" above to schedule a cutoff or interview.
+            </div>
+          </div>
+        </div>
+
+        <!-- Deadlines Ticker -->
+        <div style="display: flex; flex-direction: column; gap: 20px;">
+          <div class="card">
+            <div class="row sp" style="margin-bottom: 12px;">
+              <div class="row" style="gap: 8px;">
+                <span style="font-size: 18px;">🚨</span>
+                <h2 style="margin: 0; font-size: 16px;">Upcoming Drive Deadlines</h2>
+              </div>
+              <span class="chip n" x-text="upcomingDeadlines.length + ' Drives'"></span>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+              <template x-for="d in upcomingDeadlines" :key="d.id">
+                <div class="row sp" style="padding: 10px 12px; background: var(--bg-input); border: 1px solid var(--border); border-radius: var(--radius-xs);">
+                  <div style="flex: 1; min-width: 150px;">
+                    <b style="font-size: 13px; display: block;" x-text="d.title"></b>
+                    <div class="mu" style="font-size: 11.5px;" x-text="d.details"></div>
+                  </div>
+                  <div class="row" style="gap: 8px;">
+                    <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--warning); font-weight: 700;" x-text="d.date"></span>
+                    <button class="btn p" style="padding: 4px 8px; font-size: 11px;" @click="pick(byName(d.company || d.title.split(' ')[0]))">Tailor</button>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================================================================
+         1 · JOB PINPOINTING & UPLOAD
+         ====================================================================== -->
+    <section x-show="tab === 'match'">
+      <div class="g">
+        <div>
+          <div class="card" style="margin-bottom: 20px;">
+            <h1>1 · Upload &amp; Match Roles</h1>
+            <p class="mu">Upload your resume (PDF, DOCX, TXT) to run AI skill extractions &amp; pinpoint matching jobs.</p>
+            
+            <div class="upload-zone" style="margin: 14px 0;">
+              <div style="font-size: 28px; margin-bottom: 6px;">📂</div>
+              <b style="display: block; font-size: 14px;">Upload Resume File</b>
+              <span class="mu" style="font-size: 12px;">PDF, DOCX, TXT (Client-Side Parsing)</span>
+              <div style="margin-top: 12px;">
+                <label class="btn p" style="cursor: pointer;">
+                  Browse File
+                  <input type="file" accept=".pdf,.docx,.txt,.md" style="display: none;" @change="uploadFile($event)">
+                </label>
+              </div>
+            </div>
+
+            <div class="row" style="margin-bottom: 16px;">
+              <button class="btn outline" style="flex: 1;" @click="loadSample()">✨ Load Sample Resume</button>
+              <button class="btn danger" @click="clearResume()" x-show="resume">Clear</button>
+            </div>
+
+            <div style="margin-top: 14px;">
+              <div class="row sp" style="margin-bottom: 6px;">
+                <label class="mu" style="font-weight: 600;">Parsed Technical Text:</label>
+                <button class="btn outline" style="padding: 2px 8px; font-size: 11px;" @click="copy(resume)" x-show="resume">Copy</button>
+              </div>
+              <textarea class="mono" rows="8" x-model="resume" placeholder="Parsed resume content will appear here..."></textarea>
+            </div>
+
+            <div style="margin-top: 20px;">
+              <div class="row sp" style="margin-bottom: 8px;">
+                <h2 style="margin: 0;">Detected Skills <span class="mu" x-text="'('+skills.length+')'"></span></h2>
+              </div>
+              <div class="row" style="gap: 6px;">
+                <template x-for="s in skills" :key="s">
+                  <span class="chip x accent" title="Click to remove" @click="drop(s)" x-text="s + ' ×'"></span>
+                </template>
+                <span class="mu" x-show="!skills.length">No skills detected. Upload a resume above.</span>
+              </div>
+              <div class="row" style="margin-top: 10px;">
+                <input placeholder="Add technical skill + Enter" x-model="newSkill" @keydown.enter="add()">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="row" style="margin-bottom: 16px; gap: 6px; overflow-x: auto;">
+            <button class="btn" :class="{p: dom === 'All'}" @click="dom = 'All'">All Roles</button>
+            <template x-for="d in domStats" :key="d.i">
+              <button class="btn" :class="{p: dom === d.i}" @click="dom = d.i" x-text="d.icon + ' ' + d.n"></button>
+            </template>
+          </div>
+
+          <div class="card empty" x-show="!skills.length" style="text-align: center; padding: 48px 20px;">
+            <div style="font-size: 40px; margin-bottom: 12px;">📄</div>
+            <h2>Upload Resume to Match Openings</h2>
+            <p class="mu">The AI engine will score your background against active campus placement opportunities.</p>
+            <button class="btn p" @click="loadSample()">Load Sample Resume 🚀</button>
+          </div>
+
+          <template x-for="(j, i) in ranked" :key="j.id">
+            <div class="card job" :class="{top: i === 0}">
+              <div style="flex: 1; min-width: 250px;">
+                <div class="row" style="margin-bottom: 4px;">
+                  <span class="chip y" x-show="i === 0">★ Top AI Match</span>
+                  <span class="chip" style="font-size: 11px;" x-text="D[j.dom][1] + ' ' + D[j.dom][0]"></span>
+                  <b style="font-size: 16px;" x-text="j.title"></b>
+                </div>
+                <div class="mu" style="margin-bottom: 8px;">
+                  <b style="color: var(--text-main);" x-text="j.company"></b> · <span x-text="j.loc"></span> · <span style="color: var(--success); font-weight: 600;" x-text="j.pay"></span>
+                </div>
+                <p class="mu" style="font-size: 13px;" x-text="j.desc"></p>
+                <div class="row" style="gap: 6px; margin-top: 10px;">
+                  <template x-for="s in j.hit"><span class="chip y" x-text="'✓ ' + s"></span></template>
+                  <template x-for="s in j.miss"><span class="chip n" x-text="'✗ ' + s"></span></template>
+                </div>
+              </div>
+
+              <div style="min-width: 140px; text-align: right; display: flex; flex-direction: column; justify-content: space-between;">
+                <div>
+                  <div class="sc" x-text="j.score + '%'"></div>
+                  <div class="meter" style="margin-top: 4px;"><i :style="'width:' + j.score + '%'"></i></div>
+                </div>
+                <div class="row" style="justify-content: flex-end; margin-top: 14px; gap: 6px;">
+                  <button class="btn p" @click="pick(j)">⚡ Tailor</button>
+                  <button class="btn" @click="startInterview(j)">🎙️ Mock</button>
+                </div>
+              </div>
+            </div>
+          </template>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================================================================
+         2 · RESUME STUDIO & REAL PDF TEMPLATES
+         ====================================================================== -->
+    <section x-show="tab === 'builder'">
+      <div style="display: flex; flex-direction: column; gap: 20px;">
+        <div class="card">
+          <div class="row sp">
+            <div>
+              <span class="chip accent" style="margin-bottom: 4px;">PDF Resume Studio 2.0</span>
+              <h1 style="margin: 0;">Professional Resume Templates &amp; Verification Audit</h1>
+            </div>
+            <div class="row" style="gap: 10px;">
+              <label class="btn outline" style="cursor: pointer;">
+                📁 Use Your Own Resume PDF
+                <input type="file" accept=".pdf,.docx,.txt,.md" style="display: none;" @change="uploadFile($event)">
+              </label>
+              <button class="btn p" @click="exportPDF()">📥 Download PDF Resume</button>
+              <button class="btn outline" @click="proceedToTailor()">Next: Tailor &amp; Cover ▶</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="background: linear-gradient(135deg, rgba(127,140,106,0.08) 0%, rgba(255,255,255,0.95) 100%); border-color: rgba(127,140,106,0.28);">
+          <div class="row sp" style="margin-bottom: 12px;">
+            <div class="row" style="gap: 10px;">
+              <div style="width: 36px; height: 36px; border-radius: 10px; background: var(--accent); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 18px;">🛡️</div>
+              <div>
+                <h2 style="margin: 0; font-size: 16px;">AI Resume Audit &amp; PDF Verification Report</h2>
+                <div class="mu" style="font-size: 12px;">Structured extraction &amp; formatting feedback for placement drives.</div>
+              </div>
+            </div>
+            <div style="text-align: right;">
+              <span class="mu" style="font-size: 11px;">VERIFIED READINESS</span>
+              <div class="sc" style="font-size: 24px;" x-text="profileScore + '%'"></div>
+            </div>
+          </div>
+
+          <div class="g g2" style="margin-top: 14px;">
+            <div style="background: rgba(255,255,255,0.7); padding: 14px; border-radius: var(--radius-xs); border: 1px solid var(--border);">
+              <b style="color: var(--success); display: flex; align-items: center; gap: 6px; font-size: 13px;">✓ Verified Strengths Detected</b>
+              <ul style="margin: 6px 0 0; padding-left: 18px; font-size: 12.5px; color: var(--text-dim);">
+                <template x-for="st in auditStrengths" :key="st">
+                  <li x-text="st" style="margin-bottom: 4px;"></li>
+                </template>
+              </ul>
+            </div>
+
+            <div style="background: rgba(255,255,255,0.7); padding: 14px; border-radius: var(--radius-xs); border: 1px solid var(--border);">
+              <b style="color: var(--warning); display: flex; align-items: center; gap: 6px; font-size: 13px;">⚠️ Improvement Recommendations</b>
+              <ul style="margin: 6px 0 0; padding-left: 18px; font-size: 12.5px; color: var(--text-dim);">
+                <template x-for="imp in auditImprovements" :key="imp">
+                  <li x-text="imp" style="margin-bottom: 4px;"></li>
+                </template>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h2 style="margin-bottom: 12px;">Choose PDF Resume Layout Style</h2>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px;">
+            <div class="template-card" :class="{active: activeTemplate === 'modern'}" @click="activeTemplate = 'modern'">
+              <div class="row sp" style="margin-bottom: 6px;">
+                <b style="font-size: 14px;">Modern Tech Studio</b>
+                <span class="chip y" x-show="recommendedTemplates.includes('modern')">Recommended</span>
+              </div>
+              <div class="mu" style="font-size: 12px;">Accent headers, dense tech stack layout, ideal for software &amp; AI roles.</div>
+            </div>
+            <div class="template-card" :class="{active: activeTemplate === 'classic'}" @click="activeTemplate = 'classic'">
+              <div class="row sp" style="margin-bottom: 6px;">
+                <b style="font-size: 14px;">Classic Executive</b>
+                <span class="chip y" x-show="recommendedTemplates.includes('classic')">Recommended</span>
+              </div>
+              <div class="mu" style="font-size: 12px;">Serif typography, centered header, traditional corporate placement layout.</div>
+            </div>
+            <div class="template-card" :class="{active: activeTemplate === 'minimal'}" @click="activeTemplate = 'minimal'">
+              <div class="row sp" style="margin-bottom: 6px;">
+                <b style="font-size: 14px;">Minimalist Crisp</b>
+                <span class="chip y" x-show="recommendedTemplates.includes('minimal')">Recommended</span>
+              </div>
+              <div class="mu" style="font-size: 12px;">High readability, bold section tags, clean linear spacing for product roles.</div>
+            </div>
+            <div class="template-card" :class="{active: activeTemplate === 'creative'}" @click="activeTemplate = 'creative'">
+              <div class="row sp" style="margin-bottom: 6px;">
+                <b style="font-size: 14px;">Creative Dual-Column</b>
+              </div>
+              <div class="mu" style="font-size: 12px;">Sidebar tech skills block with main timeline column for projects.</div>
+            </div>
+            <div class="template-card" :class="{active: activeTemplate === 'slate'}" @click="activeTemplate = 'slate'">
+              <div class="row sp" style="margin-bottom: 6px;">
+                <b style="font-size: 14px;">Elegant Slate</b>
+              </div>
+              <div class="mu" style="font-size: 12px;">Slate header banner, structured block highlights for engineering graduates.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="padding: 16px;">
+          <div class="row sp" style="margin-bottom: 12px;">
+            <span class="mu" style="font-weight: 700; text-transform: uppercase;">Live A4 PDF Document Canvas</span>
+            <button class="btn p" style="padding: 5px 12px; font-size: 12px;" @click="exportPDF()">📄 Print / Export PDF</button>
+          </div>
+
+          <div class="pdf-page-container">
+            <div id="pdf-render-page" class="pdf-page" :class="'tpl-' + activeTemplate">
+              <template x-if="activeTemplate === 'creative'">
+                <div style="display: contents;">
+                  <div class="side-col">
+                    <h1 style="font-size: 20px;" x-text="parsedData.name"></h1>
+                    <div style="font-size: 11.5px; color: #555; margin-bottom: 16px;" x-text="parsedData.contact"></div>
+                    <div class="sub-heading">Technical Skills</div>
+                    <div style="display: flex; flex-wrap: wrap; gap: 4px;">
+                      <template x-for="sk in parsedData.skills" :key="sk">
+                        <span style="background: #e2e8dc; padding: 2px 6px; border-radius: 4px; font-size: 10.5px; font-weight: 600; color: #2d3725;" x-text="sk"></span>
+                      </template>
+                    </div>
+                    <div class="sub-heading" style="margin-top: 20px;">Education</div>
+                    <div style="font-size: 11.5px;" x-text="parsedData.education"></div>
+                  </div>
+                  <div class="main-col">
+                    <div class="sub-heading" style="margin-top: 0;">Professional Summary</div>
+                    <p style="font-size: 12px;" x-text="parsedData.summary"></p>
+                    <div class="sub-heading">Featured Projects</div>
+                    <template x-for="p in parsedData.projects" :key="p">
+                      <div style="margin-bottom: 10px; font-size: 12px;"><span x-text="p"></span></div>
+                    </template>
+                    <div class="sub-heading">Experience &amp; Leadership</div>
+                    <p style="font-size: 12px;" x-text="parsedData.experience || 'Undergraduate Research & Development projects.'"></p>
+                  </div>
+                </div>
+              </template>
+
+              <template x-if="activeTemplate !== 'creative'">
+                <div>
+                  <div x-show="activeTemplate === 'slate'" class="header-banner">
+                    <h1 x-text="parsedData.name"></h1>
+                    <div style="font-size: 12px; opacity: 0.9;" x-text="parsedData.contact"></div>
+                  </div>
+                  <div x-show="activeTemplate !== 'slate'">
+                    <h1 x-text="parsedData.name"></h1>
+                    <div class="contact-bar" x-text="parsedData.contact"></div>
+                  </div>
+                  <div class="sub-heading">Professional Summary</div>
+                  <p x-text="parsedData.summary"></p>
+                  <div class="sub-heading">Technical Skills &amp; Stack</div>
+                  <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px;">
+                    <template x-for="sk in parsedData.skills" :key="sk">
+                      <span style="border: 1px solid #ccc; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;" x-text="sk"></span>
+                    </template>
+                  </div>
+                  <div class="sub-heading">Projects &amp; Technical Accomplishments</div>
+                  <div style="display: flex; flex-direction: column; gap: 8px;">
+                    <template x-for="p in parsedData.projects" :key="p">
+                      <div style="font-size: 12.5px; line-height: 1.5;" x-text="p"></div>
+                    </template>
+                  </div>
+                  <div class="sub-heading">Education &amp; Credentials</div>
+                  <div style="font-size: 12.5px;" x-text="parsedData.education"></div>
+                </div>
+              </template>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================================================================
+         3 · TAILOR & COVER LETTER
+         ====================================================================== -->
+    <section x-show="tab === 'tailor'">
+      <div class="card empty" x-show="!sel" style="text-align: center; padding: 48px 20px;">
+        <div style="font-size: 40px; margin-bottom: 12px;">🎯</div>
+        <h2>Select a Target Job First</h2>
+        <p class="mu">Choose a role from Job Pinpointing to generate a custom tailored application.</p>
+        <button class="btn p" @click="tab = 'match'">Explore Matching Roles ⚡</button>
+      </div>
+
+      <div x-show="sel">
+        <div class="card job top" style="margin-bottom: 16px;">
+          <div style="flex: 1;">
+            <div class="row" style="margin-bottom: 4px;">
+              <span class="chip y">Target Application</span>
+              <h1 style="margin: 0; font-size: 20px;">Tailoring for <span class="gradient-text" x-text="sel &amp;&amp; sel.company"></span></h1>
+            </div>
+            <p class="mu" style="margin: 0;" x-text="sel &amp;&amp; sel.title + ' · ' + sel.loc + ' · ' + sel.pay"></p>
+          </div>
+          <div class="row">
+            <span class="chip accent" x-text="'PDF Style: ' + activeTemplate"></span>
+            <select style="width: auto;" x-model="tone" @change="updateCoverLetter()">
+              <option>Professional</option><option>Enthusiastic</option><option>Technical</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom: 16px; background: rgba(164, 93, 49, 0.06); border-color: rgba(164, 93, 49, 0.25);" x-show="out.gap &amp;&amp; out.gap.length">
+          <div class="row">
+            <b style="color: var(--warning);">⚠️ Skill Gaps Identified:</b>
+            <template x-for="s in (out.gap || [])"><span class="chip n" x-text="s"></span></template>
+          </div>
+        </div>
+
+        <!-- TWO COLUMN TAILOR WORKSHOP -->
+        <div class="g g2" style="align-items: flex-start;">
+          <!-- Left Column -->
+          <div style="display: flex; flex-direction: column; gap: 16px;">
+            <div class="card">
+              <div class="row sp" style="margin-bottom: 10px;">
+                <div>
+                  <h2 style="margin: 0; font-size: 16px;">📄 Selected Resume PDF Preview</h2>
+                  <div class="mu" style="font-size: 11.5px;">Rendered in <span x-text="activeTemplate"></span> style</div>
+                </div>
+                <button class="btn p" style="padding: 4px 10px; font-size: 11px;" @click="exportPDF()">🖨️ Print PDF</button>
+              </div>
+
+              <div style="background: #525659; padding: 12px; border-radius: var(--radius-xs); max-height: 380px; overflow-y: auto;">
+                <div class="pdf-page" :class="'tpl-' + activeTemplate" style="padding: 24px; min-height: auto; font-size: 11px;">
+                  <template x-if="activeTemplate === 'creative'">
+                    <div style="display: contents;">
+                      <div class="side-col" style="padding: 10px;">
+                        <h1 style="font-size: 15px;" x-text="parsedData.name"></h1>
+                        <div style="font-size: 9.5px; color: #555; margin-bottom: 6px;" x-text="parsedData.contact"></div>
+                        <div class="sub-heading" style="font-size: 10px; margin: 6px 0 2px;">Skills</div>
+                        <div style="display: flex; flex-wrap: wrap; gap: 3px;">
+                          <template x-for="sk in parsedData.skills" :key="sk">
+                            <span style="background: #e2e8dc; padding: 1px 4px; border-radius: 3px; font-size: 9px;" x-text="sk"></span>
+                          </template>
+                        </div>
+                      </div>
+                      <div class="main-col" style="padding: 10px;">
+                        <div class="sub-heading" style="font-size: 10px; margin-top: 0;">Summary</div>
+                        <p style="font-size: 10px;" x-text="parsedData.summary"></p>
+                        <div class="sub-heading" style="font-size: 10px; margin: 6px 0 2px;">Projects</div>
+                        <template x-for="p in parsedData.projects" :key="p">
+                          <div style="font-size: 10px; margin-bottom: 3px;" x-text="p"></div>
+                        </template>
+                      </div>
+                    </div>
+                  </template>
+                  <template x-if="activeTemplate !== 'creative'">
+                    <div>
+                      <h1 style="font-size: 17px;" x-text="parsedData.name"></h1>
+                      <div style="font-size: 9.5px; color: #555; border-bottom: 1px solid #ccc; padding-bottom: 3px; margin-bottom: 6px;" x-text="parsedData.contact"></div>
+                      <div class="sub-heading" style="font-size: 10.5px; margin: 4px 0 2px;">Summary</div>
+                      <p style="font-size: 10px; margin-bottom: 4px;" x-text="parsedData.summary"></p>
+                      <div class="sub-heading" style="font-size: 10.5px; margin: 4px 0 2px;">Projects &amp; Impact</div>
+                      <template x-for="p in parsedData.projects" :key="p">
+                        <div style="font-size: 10px; margin-bottom: 3px;" x-text="p"></div>
+                      </template>
+                    </div>
+                  </template>
+                </div>
+              </div>
+            </div>
+
+            <div class="card">
+              <h2>⚡ AI Bullet Enhancement Pass</h2>
+              <p class="mu" style="margin: -2px 0 12px;">Customize and sync bullets directly into your resume PDF.</p>
+              <div style="max-height: 280px; overflow-y: auto;">
+                <template x-for="(b, index) in (out.bullets || [])" :key="index">
+                  <div style="margin-bottom: 10px; padding: 10px; background: var(--bg-input); border: 1px solid var(--border); border-radius: var(--radius-xs);">
+                    <div class="mu" style="font-size: 11px; text-transform: uppercase; font-weight: 700;">Original</div>
+                    <div style="font-size: 12px; margin-bottom: 4px;" x-text="b.b"></div>
+                    <div class="mu" style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: var(--success);">Enhanced Impact</div>
+                    <textarea rows="2" x-model="b.a" style="font-size: 12px;"></textarea>
+                    <button class="btn outline" style="padding: 3px 8px; font-size: 11px; margin-top: 4px;" @click="applyBullet(b)">Apply to PDF Resume ✓</button>
+                  </div>
+                </template>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right Column -->
+          <div style="display: flex; flex-direction: column; gap: 16px;">
+            <div class="card">
+              <div class="row sp" style="margin-bottom: 8px;">
+                <h2>✉️ Generated Cover Letter</h2>
+                <button class="btn outline" style="padding: 4px 10px; font-size: 12px;" @click="copy(out.cover)">Copy</button>
+              </div>
+              <textarea rows="14" x-model="out.cover"></textarea>
+            </div>
+
+            <div class="card">
+              <div class="approval-box">
+                <input type="checkbox" id="studentOk" x-model="ok">
+                <label for="studentOk" style="cursor: pointer;">
+                  <b style="color: var(--text-main); font-size: 13.5px;">Student Review &amp; Sign-off:</b>
+                  <div class="mu" style="margin-top: 2px;">
+                    I have verified the customized resume bullets and cover letter details for accuracy.
+                  </div>
+                </label>
+              </div>
+
+              <div class="row sp" style="margin-top: 12px;">
+                <button class="btn p" style="padding: 12px 20px; flex: 1;" :disabled="!ok" @click="apply()">
+                  Mark as Applied in Tracker 🚀
+                </button>
+                <button class="btn outline" style="padding: 12px 16px;" @click="exportPDF()">
+                  🖨️ Print PDF
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================================================================
+         4 · SCHEDULE & DEADLINES
+         ====================================================================== -->
+    <section x-show="tab === 'calendar'">
+      <div class="card">
+        <div class="row sp" style="margin-bottom: 16px;">
+          <div>
+            <h1>4 · Calendar &amp; Placement Deadlines</h1>
+            <p class="mu">Manage your complete drive schedule and interview cutoffs.</p>
+          </div>
+          <button class="btn p" @click="addCustomEventPrompt()">+ Add Event</button>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <template x-for="ev in calendarEvents" :key="ev.id">
+            <div class="row sp" style="padding: 12px 16px; background: var(--bg-input); border: 1px solid var(--border); border-radius: var(--radius-xs);">
+              <div>
+                <span class="chip" :class="ev.type === 'Deadline' ? 'n' : 'y'" x-text="ev.type"></span>
+                <b style="margin-left: 8px; font-size: 14px;" x-text="ev.title"></b>
+                <div class="mu" style="margin-top: 4px;" x-text="'Date: ' + ev.date + ' · ' + ev.details"></div>
+              </div>
+              <button class="btn danger" style="padding: 6px 12px; font-size: 12px;" @click="calendarEvents = calendarEvents.filter(x => x.id !== ev.id)">Remove</button>
+            </div>
+          </template>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================================================================
+         5 · TRACKER
+         ====================================================================== -->
+    <section x-show="tab === 'track'">
+      <div class="card">
+        <h1>5 · Application Pipeline Tracker</h1>
+        <p class="mu" x-text="apps.length + ' applications tracked'"></p>
+
+        <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 14px;">
+          <template x-for="a in apps" :key="a.company">
+            <div class="card job" style="margin: 0;">
+              <div style="flex: 1;">
+                <b style="font-size: 16px;" x-text="a.company"></b>
+                <span class="chip accent" style="margin-left: 6px;" x-text="a.title"></span>
+                <div class="mu" style="margin-top: 4px;" x-text="a.dom + ' · Match: ' + a.score + '%' + (a.date ? ' · Applied: ' + a.date : '')"></div>
+              </div>
+              <div class="row">
+                <select style="width: auto; font-weight: 600;" x-model="a.status">
+                  <option>Saved</option><option>Applied</option><option>Interview</option><option>Offer</option><option>Rejected</option>
+                </select>
+                <button class="btn danger" @click="apps = apps.filter(x => x !== a)">Remove</button>
+              </div>
+            </div>
+          </template>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================================================================
+         6 · COACH (MOCK INTERVIEW)
+         ====================================================================== -->
+    <section x-show="tab === 'coach'">
+      <div class="card">
+        <div class="row sp" style="margin-bottom: 16px;">
+          <div>
+            <h1>6 · Strict Hiring Manager Coach</h1>
+            <p class="mu" x-text="interviewRole ? 'Active Role: ' + interviewRole.title + ' @ ' + interviewRole.company : 'Select a target role to begin drill.'"></p>
+          </div>
+          <select style="width: 280px;" @change="startInterview(C2[$event.target.value])">
+            <option value="">Select target role...</option>
+            <template x-for="(c, i) in C2" :key="i">
+              <option :value="i" x-text="c.company + ' – ' + c.title"></option>
+            </template>
+          </select>
+        </div>
+
+        <div x-show="interviewRole &amp;&amp; interviewState === 'active'">
+          <div class="card" style="background: var(--bg-input); margin-bottom: 14px;">
+            <b style="color: var(--accent);">Hiring Manager:</b>
+            <p style="font-size: 15px; margin-top: 4px;" x-text="currentPrompt"></p>
+          </div>
+          <textarea rows="6" x-model="candidateAnswer" placeholder="Type STAR structured response with metrics..."></textarea>
+          <div class="row sp" style="margin-top: 12px;">
+            <span class="mu" x-text="wordsCount() + ' words'"></span>
+            <button class="btn p" @click="submitAnswer()">Submit Response ▶</button>
+          </div>
+        </div>
+
+        <div x-show="interviewState === 'completed'">
+          <h2>Interview Scorecard Report</h2>
+          <div class="sc" x-text="overallScore + ' / 10'"></div>
+          <button class="btn p" style="margin-top: 14px;" @click="startInterview(interviewRole)">Restart Interview</button>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- ==========================================================================
+     GEMINI AI FLOATING ASSISTANT
+     ========================================================================== -->
+<div x-show="authed" x-cloak>
+  <!-- Launcher Button -->
+  <button class="chat-launcher-btn" @click="chatOpen = !chatOpen" :title="chatOpen ? 'Minimize Assistant' : 'Chat with Gemini Co-Pilot'">
+    <span class="chat-pulse-dot"></span>
+    <span style="font-size: 18px;">✨</span>
+    <span x-text="chatOpen ? 'Close Gemini' : 'Gemini Co-Pilot AI'"></span>
+  </button>
+
+  <!-- Chat Drawer / Window -->
+  <div class="chat-window" x-show="chatOpen" x-transition>
+    <!-- Chat Header -->
+    <div class="chat-header">
+      <div class="row" style="gap: 10px;">
+        <div style="width: 32px; height: 32px; border-radius: 9px; background: var(--accent-gradient); display: flex; align-items: center; justify-content: center; font-size: 16px;">
+          ✨
+        </div>
+        <div>
+          <b style="font-size: 13.5px; display: block; line-height: 1.2;">Gemini PlacePilot Co-Pilot</b>
+          <span style="font-size: 10.5px; color: var(--success); font-weight: 600;">● Live Gemini AI &bull; Ready to help</span>
+        </div>
+      </div>
+      <div class="row" style="gap: 4px;">
+        <button class="btn outline" style="padding: 4px 8px; font-size: 11px;" @click="clearChat()" title="Clear conversation">🧹</button>
+        <button class="btn outline" style="padding: 4px 8px; font-size: 11px;" @click="chatOpen = false" title="Minimize">✖</button>
+      </div>
+    </div>
+
+    <!-- Chat Messages Flow -->
+    <div class="chat-messages-area" id="chat-messages-box">
+      <template x-for="(m, i) in chatMessages" :key="i">
+        <div class="chat-bubble" :class="m.sender">
+          <div x-html="m.text"></div>
+          <span class="chat-meta" x-text="m.time"></span>
+        </div>
+      </template>
+      <div x-show="chatTyping" class="chat-bubble bot" style="font-style: italic; opacity: 0.8; font-size: 12px;">
+        Gemini AI is thinking...
+      </div>
+    </div>
+
+    <!-- Quick Prompt Suggestions -->
+    <div class="chat-quick-chips">
+      <template x-for="q in quickSuggestions" :key="q">
+        <div class="chat-quick-pill" @click="sendQuick(q)" x-text="q"></div>
+      </template>
+    </div>
+
+    <!-- Chat Input Form -->
+    <form class="chat-input-bar" @submit.prevent="submitUserChat()">
+      <input type="text" x-model="chatInput" placeholder="Ask Gemini for advice, resume review, or tips..." :disabled="chatTyping">
+      <button type="submit" class="chat-send-btn" :disabled="chatTyping || !chatInput.trim()">
+        ➔
+      </button>
+    </form>
+  </div>
+</div>
+
+<div class="toast" x-show="msg" x-text="msg" x-transition></div>
+
+<script>
+const D = [
+  ['Backend & Cloud', '☁️'],
+  ['Full Stack & Web', '🌐'],
+  ['AI & Data Science', '🧠'],
+  ['DevOps & SRE', '🛠️'],
+  ['Mobile & UI/UX', '📱'],
+  ['Cybersecurity', '🛡️'],
+  ['Product & Analytics', '📈'],
+  ['QA & Automation', '🧪']
+];
+
+const C = [
+  [0, 'Apex Dynamics', 'Cloud & Systems Engineer Intern', 12, 'Bengaluru', '₹45,000/mo', ['Python', 'PostgreSQL', 'Docker', 'Linux', 'REST APIs'], 'Scale distributed services.', '2026-11-12'],
+  [0, 'CloudScale Inc', 'Backend Distributed Engineer', 8, 'Hyderabad', '14.5 LPA', ['Python', 'PostgreSQL', 'AWS', 'Redis'], 'Build high-throughput services.', '2026-11-20'],
+  [1, 'Nexus AI Labs', 'Full Stack React & Node Engineer', 14, 'Pune', '14.0 LPA', ['React', 'Node.js', 'JavaScript', 'Tailwind', 'PostgreSQL'], 'Build accessible dashboards.', '2026-11-16'],
+  [2, 'NeuralGrid AI', 'Applied ML Engineer', 9, 'Bengaluru', '16.5 LPA', ['Python', 'PyTorch', 'Data Structures', 'Linux'], 'Evaluate machine-learning models.', '2026-11-23'],
+  [2, 'OpenAI Labs', 'Research & LLM Engineer', 6, 'Bengaluru / Remote', '22.0 LPA', ['Python', 'PyTorch', 'REST APIs', 'Linux', 'Data Structures'], 'Fine-tune large language models and optimize inference pipelines.', '2026-11-25'],
+  [4, 'Zeta', 'Flutter & iOS Mobile Engineer', 10, 'Bengaluru', '15.0 LPA', ['JavaScript', 'Git', 'REST APIs', 'SQL'], 'Develop high-performance cross-platform financial apps.', '2026-11-28'],
+  [5, 'SentinelOne', 'Threat Intelligence Engineer', 7, 'Mumbai', '18.0 LPA', ['Python', 'Linux', 'SQL', 'Docker'], 'Build threat detection agents and automated incident response hooks.', '2026-12-02'],
+  [3, 'HashiCorp', 'Platform & Reliability Engineer', 8, 'Bengaluru', '19.5 LPA', ['Docker', 'AWS', 'Linux', 'Python', 'Git'], 'Manage cloud infrastructure reliability and CI/CD pipelines.', '2026-12-05'],
+  [6, 'Razorpay', 'Growth Product Analyst', 10, 'Bengaluru', '16.0 LPA', ['SQL', 'Python', 'Data Structures'], 'Analyze merchant transaction funnels and optimize payment conversion.', '2026-12-10'],
+  [7, 'BrowserStack', 'Automation QA Engineer', 12, 'Mumbai', '12.5 LPA', ['Python', 'Git', 'REST APIs', 'Linux'], 'Build robust test automation suites for cross-browser infrastructure.', '2026-12-14']
+].map((r, i) => ({ id: i, dom: r[0], company: r[1], title: r[2], vac: r[3], loc: r[4], pay: r[5], req: r[6], desc: r[7], deadline: r[8] }));
+
+const S = {
+  'Python': 'python3?', 'Java': 'java(?!\\s*script)', 'JavaScript': 'javascript|js', 'TypeScript': 'typescript',
+  'React': 'react(?!\\s*native)|reactjs', 'Node.js': 'node\\.?js|node', 'PostgreSQL': 'postgres(ql)?|psql',
+  'SQL': 'sql|mysql', 'Docker': 'docker', 'Linux': 'linux|bash', 'Git': 'git|github', 'AWS': 'aws',
+  'REST APIs': 'restful( apis?)?|rest apis?|apis?', 'Tailwind': 'tailwind', 'PyTorch': 'py ?torch'
+};
+
+const RX = Object.entries(S).map(([k, p]) => [k, new RegExp('(?<![a-z0-9+#])(' + p + ')(?![a-z0-9+#])', 'i')]);
+const extract = t => RX.filter(([k, r]) => r.test(t)).map(([k]) => k);
+
+const SAMPLE = `ALEX R. - COMPUTER SCIENCE CANDIDATE
+Email: alex.cs@college.edu | Phone: +91 98765 43210 | GitHub: github.com/alex-dev
+Skills: Python, PostgreSQL, React, REST APIs, Docker, Git, Linux, SQL, AWS, PyTorch
+
+Projects:
+• E-Commerce Microservice API: Built Python/Node REST endpoints connected to a PostgreSQL database with Redis caching, reducing query latency by 35%.
+• Web Scraping & Pipeline Engine: Created a Python script parsing 10,000+ records into structured tables with Dockerized deployment.
+
+Education:
+B.Tech Computer Science and Engineering (CGPA: 8.6/10) - State Tech University (2022-2026)`;
+
+function app() {
+  return {
+    authed: false,
+    authMode: 'signin',
+    loginUser: '',
+    loginPassword: '',
+    authError: '',
+    authBusy: false,
+    showPassword: false,
+    tabs: [
+      ['dash', 'Dashboard'],
+      ['match', 'Job Pinpointing'],
+      ['builder', 'Resume Studio'],
+      ['tailor', 'Tailor & Cover'],
+      ['calendar', 'Schedule & Deadlines'],
+      ['track', 'Tracker'],
+      ['coach', 'AI Mock Interview']
+    ],
+    tab: 'dash',
+    dom: 'All',
+    theme: 'studio',
+    resume: '',
+    extra: [],
+    removed: [],
+    newSkill: '',
+    apps: [],
+    sel: null,
+    tone: 'Professional',
+    out: {},
+    ok: false,
+    C2: C,
+
+    calendarEvents: [],
+    selectedDate: '',
+    calMonth: 10,
+    calYear: 2026,
+    msg: '',
+
+    activeTemplate: 'modern',
+    parsedData: {
+      name: 'Candidate Name',
+      contact: 'email@domain.com | +91 98765 43210',
+      summary: 'Computer Science candidate with expertise in software systems.',
+      skills: [],
+      projects: [],
+      education: 'B.Tech Computer Science'
+    },
+    auditScore: 85,
+    auditStrengths: [],
+    auditImprovements: [],
+    recommendedTemplates: ['modern', 'minimal'],
+
+    interviewRole: null,
+    interviewState: 'idle',
+    currentQNum: 0,
+    currentPrompt: '',
+    candidateAnswer: '',
+    scorecard: [],
+    overallScore: 0,
+
+    /* -------------------------------------------------------------
+       AI CHATBOT ENGINE STATE
+       ------------------------------------------------------------- */
+    chatOpen: false,
+    chatInput: '',
+    chatTyping: false,
+    quickSuggestions: [
+      '🔥 Give me quick motivation',
+      '💡 How does ATS scoring work?',
+      '🎯 Tailor my resume for roles',
+      '🧠 Explain the STAR method',
+      '📅 What are my upcoming deadlines?'
+    ],
+    chatMessages: [
+      {
+        sender: 'bot',
+        text: '👋 Hey there! I am your <b>PlacePilot Co-Pilot</b>, powered by <b>Gemini AI</b>. I can analyze your resume skills, give customized interview advice, or help you navigate your placement drives. What is on your mind?',
+        time: 'Just now'
+      }
+    ],
+
+    get passwordStrength() {
+      const p = this.loginPassword;
+      if (p.length < 6) return { text: 'Too Short (Min 6 chars)', percent: 20, color: 'color: var(--danger);', barColor: 'var(--danger)' };
+      let score = 0;
+      if (/[A-Z]/.test(p)) score++;
+      if (/[0-9]/.test(p)) score++;
+      if (/[^A-Za-z0-9]/.test(p)) score++;
+      if (score <= 1) return { text: 'Fair', percent: 50, color: 'color: var(--warning);', barColor: 'var(--warning)' };
+      if (score === 2) return { text: 'Good', percent: 80, color: 'color: var(--success);', barColor: 'var(--success)' };
+      return { text: 'Strong 🔒', percent: 100, color: 'color: var(--success);', barColor: 'var(--success)' };
+    },
+
+    async hashPassword(password) {
+      const msgBuffer = new TextEncoder().encode(password);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    },
+
+    async handleAuth() {
+      this.authError = '';
+      const user = this.loginUser.trim();
+      const pass = this.loginPassword;
+
+      if (!user) {
+        this.authError = 'Please enter your Student ID or Email.';
+        return;
+      }
+      if (!pass || pass.length < 6) {
+        this.authError = 'Password must be at least 6 characters long.';
+        return;
+      }
+
+      let accounts = {};
+      try {
+        accounts = JSON.parse(localStorage.getItem('pp_accounts') || '{}');
+      } catch (e) {
+        accounts = {};
+      }
+
+      const hashedPass = await this.hashPassword(pass);
+
+      if (this.authMode === 'register') {
+        if (accounts[user]) {
+          this.authError = 'Account already exists. Please Sign In.';
+          return;
+        }
+        accounts[user] = { passwordHash: hashedPass, created: Date.now() };
+        localStorage.setItem('pp_accounts', JSON.stringify(accounts));
+        this.toast('Account created securely! Signing you in...');
+      } else {
+        if (!accounts[user]) {
+          this.authError = 'Account not found. Please register first.';
+          return;
+        }
+        if (accounts[user].passwordHash !== hashedPass) {
+          this.authError = 'Incorrect password. Please try again.';
+          return;
+        }
+      }
+
+      sessionStorage.setItem('pp.authenticatedUser', user);
+      this.authed = true;
+      this.loginUser = user;
+      document.body.setAttribute('data-authed', 'true');
+      this.toast('Secure authentication successful!');
+    },
+
+    getTabIcon(tabId) {
+      const icons = { dash:'⚡', match:'🎯', builder:'📄', tailor:'✨', calendar:'📅', track:'📊', coach:'🎙️' };
+      return icons[tabId] || '•';
+    },
+
+    init() {
+      try {
+        const s = JSON.parse(localStorage.getItem('pp_v2') || '{}');
+        Object.assign(this, {
+          resume: s.resume || '',
+          apps: s.apps || [],
+          theme: s.theme || 'studio',
+          loginUser: s.loginUser || '',
+          calendarEvents: s.calendarEvents || []
+        });
+      } catch (e) {}
+
+      const activeUser = sessionStorage.getItem('pp.authenticatedUser');
+      if (activeUser) {
+        this.authed = true;
+        this.loginUser = activeUser;
+        document.body.setAttribute('data-authed', 'true');
+      }
+
+      if (!this.calendarEvents.length) {
+        const baseEvents = C.map(j => ({
+          id: 'drive-' + j.id,
+          title: j.company + ' Deadline',
+          date: j.deadline,
+          type: 'Deadline',
+          details: j.title + ' · ' + j.pay,
+          company: j.company
+        }));
+
+        const extraEvents = [
+          { id: 'ev-101', title: 'Apex Dynamics Online Assessment', date: '2026-11-14', type: 'Interview', details: 'Coding Round & Aptitude (HackerRank)', company: 'Apex Dynamics' },
+          { id: 'ev-102', title: 'Nexus AI Tech Round 1', date: '2026-11-18', type: 'Interview', details: 'Live Full Stack Coding & React Architecture', company: 'Nexus AI Labs' },
+          { id: 'ev-103', title: 'CloudScale Technical Interview', date: '2026-11-22', type: 'Interview', details: 'System Design & Distributed Systems', company: 'CloudScale Inc' },
+          { id: 'ev-104', title: 'OpenAI Labs Research Panel', date: '2026-11-27', type: 'Interview', details: 'ML Theory & Optimization Round', company: 'OpenAI Labs' },
+          { id: 'ev-105', title: 'HashiCorp SRE Final Round', date: '2026-12-07', type: 'Interview', details: 'Infrastructure Troubleshooting & DevOps Culture', company: 'HashiCorp' }
+        ];
+
+        this.calendarEvents = [...baseEvents, ...extraEvents];
+      }
+
+      this.selectedDate = '2026-11-12';
+      if (this.resume) this.parseResumeStructured(this.resume);
+      else this.loadSample();
+
+      this.paint();
+    },
+
+    persist() {
+      try {
+        localStorage.setItem('pp_v2', JSON.stringify({
+          resume: this.resume,
+          apps: this.apps,
+          theme: this.theme,
+          calendarEvents: this.calendarEvents
+        }));
+      } catch (e) {}
+    },
+
+    logout() {
+      this.authed = false;
+      sessionStorage.removeItem('pp.authenticatedUser');
+      document.body.removeAttribute('data-authed');
+    },
+
+    resetAllData() {
+      localStorage.clear();
+      sessionStorage.clear();
+      location.reload();
+    },
+
+    flip() {
+      this.theme = this.theme === 'studio' ? 'twilight' : 'studio';
+      this.paint();
+      this.persist();
+    },
+
+    paint() {
+      document.documentElement.setAttribute('data-theme', this.theme);
+    },
+
+    toast(m) {
+      this.msg = m;
+      setTimeout(() => this.msg = '', 2800);
+    },
+
+    byName(n) {
+      return C.find(c => c.company.toLowerCase().includes(n.toLowerCase())) || C[0];
+    },
+
+    get skills() {
+      return [...new Set([...extract(this.resume).filter(s => !this.removed.includes(s)), ...this.extra])];
+    },
+
+    drop(s) {
+      if (this.extra.includes(s)) this.extra = this.extra.filter(x => x !== s);
+      else this.removed.push(s);
+    },
+
+    add() {
+      if (this.newSkill.trim()) {
+        this.extra.push(this.newSkill.trim());
+        this.newSkill = '';
+      }
+    },
+
+    clearResume() {
+      this.resume = '';
+      this.extra = [];
+      this.removed = [];
+    },
+
+    loadSample() {
+      this.resume = SAMPLE;
+      this.parseResumeStructured(SAMPLE);
+      this.toast('Sample candidate profile & audit generated!');
+    },
+
+    get profileScore() {
+      let score = 40;
+      const sk = this.skills;
+      score += Math.min(30, sk.length * 3);
+      if (/%|\d+ms|\d+k|\d+ users/i.test(this.resume)) score += 15;
+      if (/projects|experience|internship/i.test(this.resume)) score += 15;
+      return Math.min(99, Math.max(35, score));
+    },
+
+    parseResumeStructured(text) {
+      const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+      let name = lines[0] ? lines[0].split('-')[0].trim() : 'Candidate Name';
+      let contact = lines.find(l => l.includes('@') || l.includes('+')) || 'alex.cs@college.edu | +91 98765 43210';
+      
+      let detectedSkills = this.skills;
+      let projects = lines.filter(l => l.startsWith('•') || l.startsWith('-'));
+      if (!projects.length) {
+        projects = [
+          '• Microservices Infrastructure: Designed scalable backend endpoints.',
+          '• Data Pipeline: Processed 10k+ records using Python & Docker.'
+        ];
+      }
+
+      let edu = lines.find(l => /b\.?tech|bachelor|degree|cgpa/i.test(l)) || 'B.Tech Computer Science and Engineering (CGPA: 8.6/10)';
+
+      this.parsedData = {
+        name,
+        contact,
+        summary: `Results-driven software engineering candidate proficient in ${detectedSkills.slice(0, 4).join(', ')}. Experienced in building high-availability tools and clean system architecture.`,
+        skills: detectedSkills,
+        projects: projects,
+        education: edu
+      };
+
+      let str = [];
+      let imp = [];
+
+      if (detectedSkills.length >= 6) { str.push('High technical skill density detected.'); }
+      else { imp.push('Add 3+ more core technical skills to pass ATS thresholds.'); }
+
+      if (text.includes('%') || /\d+ms|\d+k/i.test(text)) { str.push('Quantified metrics & performance impact identified.'); }
+      else { imp.push('Include specific numerical outcomes in project bullet points (e.g., "reduced latency by 30%").'); }
+
+      if (projects.length >= 2) { str.push('Clear project accomplishments section present.'); }
+
+      this.auditStrengths = str;
+      this.auditImprovements = imp;
+
+      if (detectedSkills.includes('Python') || detectedSkills.includes('React')) {
+        this.recommendedTemplates = ['modern', 'minimal'];
+      } else {
+        this.recommendedTemplates = ['classic', 'slate'];
+      }
+    },
+
+    async uploadFile(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      this.toast('Reading file...');
+      try {
+        if (file.name.endsWith('.pdf')) {
+          const arrayBuffer = await file.arrayBuffer();
+          const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+          let text = '';
+          for (let i = 1; i <= pdf.numPages; i++) {
+            const page = await pdf.getPage(i);
+            const content = await page.getTextContent();
+            text += content.items.map(item => item.str).join(' ') + '\n';
+          }
+          this.resume = text;
+          this.parseResumeStructured(text);
+          this.toast('Custom PDF parsed & loaded successfully!');
+        } else {
+          const reader = new FileReader();
+          reader.onload = (evt) => {
+            this.resume = String(evt.target.result);
+            this.parseResumeStructured(this.resume);
+            this.toast('Custom resume loaded!');
+          };
+          reader.readAsText(file);
+        }
+      } catch (err) {
+        this.toast('Parsing failed. Try pasting text directly.');
+      }
+    },
+
+    exportPDF() {
+      const printWindow = window.open('', '_blank');
+      if (!printWindow) {
+        this.toast('Please allow pop-ups to export your PDF resume.');
+        return;
+      }
+      
+      const renderEl = document.getElementById('pdf-render-page');
+      const htmlContent = renderEl ? renderEl.outerHTML : '<div>Resume Content</div>';
+
+      printWindow.document.open();
+      printWindow.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${this.parsedData.name} - Resume</title><style>
+        body { font-family: 'Plus Jakarta Sans', Arial, sans-serif; background: #fff; color: #111; margin: 0; padding: 20px; }
+        .pdf-page { width: 100%; max-width: 794px; margin: 0 auto; background: #fff; box-shadow: none !important; padding: 20px; }
+        .sub-heading { font-size: 13px; font-weight: 700; text-transform: uppercase; border-bottom: 1.5px solid #4f5d3d; padding-bottom: 3px; margin: 16px 0 8px; color: #4f5d3d; }
+        h1 { font-size: 24px; margin-bottom: 4px; }
+        p, div { font-size: 12px; line-height: 1.5; }
+        @media print { body { padding: 0; } }
+      </style></head><body>${htmlContent}</body></html>`);
+      printWindow.document.close();
+      printWindow.focus();
+      setTimeout(() => {
+        printWindow.print();
+      }, 400);
+    },
+
+    proceedToTailor() {
+      if (this.ranked.length) this.pick(this.ranked[0]);
+      else this.tab = 'tailor';
+    },
+
+    rate(c) {
+      const sk = this.skills;
+      const got = c.req.filter(s => sk.includes(s)).length;
+      return {
+        ...c,
+        score: Math.min(99, Math.round(100 * got / c.req.length)),
+        hit: c.req.filter(s => sk.includes(s)),
+        miss: c.req.filter(s => !sk.includes(s))
+      };
+    },
+
+    get ranked() {
+      if (!this.skills.length) return [];
+      let list = C.map(c => this.rate(c));
+      if (this.dom !== 'All') {
+        list = list.filter(j => j.dom === this.dom);
+      }
+      return list.sort((a, b) => b.score - a.score);
+    },
+
+    get domStats() {
+      return D.map((d, i) => ({ i, n: d[0], icon: d[1] }));
+    },
+
+    pick(c) {
+      this.sel = this.rate(c);
+      this.ok = false;
+      this.buildTailored();
+      this.tab = 'tailor';
+    },
+
+    buildTailored() {
+      const j = this.sel;
+      if (!j) return;
+      const bullets = (this.parsedData.projects || []).map(p => ({
+        b: p,
+        a: p + ` (Optimized for ${j.title} tech stack requirements).`
+      }));
+      this.out = {
+        gap: j.miss || [],
+        bullets: bullets,
+        cover: ''
+      };
+      this.updateCoverLetter();
+    },
+
+    updateCoverLetter() {
+      if (!this.sel) return;
+      const company = this.sel.company;
+      const role = this.sel.title;
+      const name = this.parsedData.name || 'Candidate Name';
+      const topSkills = (this.skills || []).slice(0, 3).join(', ') || 'software engineering';
+      
+      let opening;
+      if (this.tone === 'Enthusiastic') {
+        opening = `I am thrilled to submit my application for the ${role} position at ${company}. My hands-on experience in ${topSkills} has prepared me to bring energy and value to your engineering team.`;
+      } else if (this.tone === 'Technical') {
+        opening = `I am writing to apply for the ${role} role at ${company}. Having engineered software systems using ${topSkills}, I am eager to apply my technical foundation to your current production stack.`;
+      } else {
+        opening = `I am writing to express my strong interest in the ${role} role at ${company}. My technical background in ${topSkills} aligns closely with your team's mission.`;
+      }
+
+      this.out.cover = `Dear Hiring Team at ${company},\n\n${opening}\n\nI am particularly interested in contributing to ${company}'s ongoing developments and leveraging my skills in a collaborative environment. I look forward to the opportunity to discuss how my project work and technical background align with your needs.\n\nSincerely,\n${name}`;
+    },
+
+    applyBullet(b) {
+      if (b && b.a) {
+        if (!this.parsedData.projects) this.parsedData.projects = [];
+        const idx = this.parsedData.projects.indexOf(b.b);
+        if (idx !== -1) {
+          this.parsedData.projects[idx] = b.a;
+        } else {
+          this.parsedData.projects.push(b.a);
+        }
+        this.toast('Bullet applied to PDF resume!');
+      }
+    },
+
+    apply() {
+      if (!this.sel) return;
+      if (!this.apps.some(a => a.company === this.sel.company)) {
+        this.apps.push({
+          company: this.sel.company,
+          title: this.sel.title,
+          dom: D[this.sel.dom][0],
+          score: this.sel.score,
+          status: 'Applied',
+          date: new Date().toISOString().split('T')[0]
+        });
+        this.toast(`Marked application for ${this.sel.company} as Applied!`);
+        this.persist();
+      } else {
+        this.toast(`Already tracking ${this.sel.company}`);
+      }
+      this.tab = 'track';
+    },
+
+    calTitle() {
+      const monthNames = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+      return `${monthNames[this.calMonth]} ${this.calYear}`;
+    },
+
+    prevMonth() {
+      if (this.calMonth === 0) {
+        this.calMonth = 11;
+        this.calYear--;
+      } else {
+        this.calMonth--;
+      }
+    },
+
+    nextMonth() {
+      if (this.calMonth === 11) {
+        this.calMonth = 0;
+        this.calYear++;
+      } else {
+        this.calMonth++;
+      }
+    },
+
+    jumpToToday() {
+      const today = new Date();
+      this.calMonth = today.getMonth();
+      this.calYear = today.getFullYear();
+      this.selectedDate = today.toISOString().split('T')[0];
+    },
+
+    get calendarDays() {
+      const firstDay = new Date(this.calYear, this.calMonth, 1).getDay();
+      const totalDays = new Date(this.calYear, this.calMonth + 1, 0).getDate();
+      const days = [];
+
+      for (let i = 0; i < firstDay; i++) {
+        days.push({ date: null, dateStr: '', events: [] });
+      }
+
+      for (let d = 1; d <= totalDays; d++) {
+        const mStr = String(this.calMonth + 1).padStart(2, '0');
+        const dStr = String(d).padStart(2, '0');
+        const dateStr = `${this.calYear}-${mStr}-${dStr}`;
+        const evs = this.calendarEvents.filter(e => e.date === dateStr);
+        days.push({ date: d, dateStr, events: evs });
+      }
+      return days;
+    },
+
+    get selectedDateEvents() {
+      if (!this.selectedDate) return [];
+      return this.calendarEvents.filter(e => e.date === this.selectedDate);
+    },
+
+    get upcomingDeadlines() {
+      return this.calendarEvents.filter(e => e.type === 'Deadline').sort((a,b) => a.date.localeCompare(b.date));
+    },
+
+    selectDate(dateStr) {
+      this.selectedDate = dateStr;
+    },
+
+    formatFriendlyDate(dateStr) {
+      if (!dateStr) return '';
+      const parts = dateStr.split('-');
+      if (parts.length < 3) return dateStr;
+      const d = new Date(parts[0], parts[1] - 1, parts[2]);
+      return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+    },
+
+    addCustomEventPrompt() {
+      const title = prompt("Event Title (e.g. Amazon Online Assessment):");
+      if (!title) return;
+      const date = prompt("Event Date (YYYY-MM-DD):", this.selectedDate || '2026-11-15');
+      if (!date) return;
+      const type = confirm("Is this an Application Deadline? (Click OK for Deadline, Cancel for Interview/OA)") ? 'Deadline' : 'Interview';
+      const details = prompt("Details / Notes:", "Campus placement round") || "";
+
+      this.calendarEvents.push({
+        id: 'ev-' + Date.now(),
+        title,
+        date,
+        type,
+        details
+      });
+      this.selectedDate = date;
+      this.toast('Event added to placement calendar!');
+      this.persist();
+    },
+
+    addEventForDate(dateStr) {
+      if (!dateStr) dateStr = '2026-11-15';
+      this.selectedDate = dateStr;
+      this.addCustomEventPrompt();
+    },
+
+    startInterview(role) {
+      if (!role) return;
+      this.interviewRole = role;
+      this.interviewState = 'active';
+      this.currentQNum = 1;
+      this.candidateAnswer = '';
+      this.scorecard = [];
+      this.overallScore = 0;
+      this.currentPrompt = `Can you describe a challenging project where you used ${role.req.slice(0, 2).join(' and ')}? Walk me through your specific contribution and quantifiable metrics.`;
+      this.tab = 'coach';
+    },
+
+    wordsCount() {
+      if (!this.candidateAnswer.trim()) return 0;
+      return this.candidateAnswer.trim().split(/\s+/).length;
+    },
+
+    submitAnswer() {
+      if (!this.candidateAnswer.trim()) {
+        this.toast('Please enter a response.');
+        return;
+      }
+      
+      const words = this.wordsCount();
+      let qScore = 6;
+      if (words >= 30) qScore += 2;
+      if (/\d+%|\d+ms|\d+k/i.test(this.candidateAnswer)) qScore += 2;
+
+      this.scorecard.push({
+        q: this.currentPrompt,
+        a: this.candidateAnswer,
+        score: Math.min(10, qScore)
+      });
+
+      if (this.currentQNum < 3) {
+        this.currentQNum++;
+        this.candidateAnswer = '';
+        if (this.currentQNum === 2) {
+          this.currentPrompt = `How did you optimize system architecture or handle trade-offs during implementation for ${this.interviewRole.title}?`;
+        } else {
+          this.currentPrompt = `If a critical production issue occurred in your solution under heavy load, how would you debug and resolve it?`;
+        }
+      } else {
+        this.interviewState = 'completed';
+        const sum = this.scorecard.reduce((acc, curr) => acc + curr.score, 0);
+        this.overallScore = Math.round(sum / this.scorecard.length);
+        this.toast('Mock Interview drill complete! Check your scorecard.');
+      }
+    },
+
+    /* =============================================================
+       AI CHATBOT LOGIC & INTELLIGENCE WITH GEMINI API
+       ============================================================= */
+    clearChat() {
+      this.chatMessages = [
+        {
+          sender: 'bot',
+          text: 'Conversation cleared! I am ready for your placement prep questions.',
+          time: 'Just now'
+        }
+      ];
+    },
+
+    sendQuick(q) {
+      this.chatInput = q;
+      this.submitUserChat();
+    },
+
+    async submitUserChat() {
+      const q = this.chatInput.trim();
+      if (!q) return;
+
+      const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      this.chatMessages.push({ sender: 'user', text: this.escapeHtml(q), time: now });
+      this.chatInput = '';
+      this.chatTyping = true;
+      this.scrollChat();
+
+      try {
+        const reply = await this.callGeminiApi(q);
+        this.chatMessages.push({
+          sender: 'bot',
+          text: reply,
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        });
+      } catch (err) {
+        console.error('Gemini API request failed, falling back:', err);
+        const fallbackReply = this.generateBotResponse(q);
+        this.chatMessages.push({
+          sender: 'bot',
+          text: fallbackReply,
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        });
+      } finally {
+        this.chatTyping = false;
+        this.scrollChat();
+      }
+    },
+
+    async callGeminiApi(userQuery) {
+      const apiKey = ""; // Canvas runtime automatically handles this
+      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+      const systemPrompt = `You are "PlacePilot Co-Pilot", an expert, highly encouraging campus placement and career coach AI inside the PlacePilot web application.
+Your goal is to guide students to land their dream placement job offers with practical, concise, and structured advice.
+
+Current Student Context:
+- Student Name/ID: ${this.loginUser || 'Student'}
+- Current ATS Readiness Score: ${this.profileScore}%
+- Detected Skills: ${this.skills.length ? this.skills.join(', ') : 'None uploaded yet'}
+- Active Tracked Applications: ${this.apps.length}
+- Target Tailored Job: ${this.sel ? this.sel.title + ' at ' + this.sel.company : 'None selected'}
+- Upcoming Deadlines: ${this.upcomingDeadlines.map(d => d.title + ' (' + d.date + ')').slice(0, 3).join(', ') || 'None'}
+
+Instructions:
+1. Provide actionable, concise, and encouraging responses tailored to campus placements, DSA prep, ATS resume optimization, behavioral interview techniques (STAR method), and drive deadlines.
+2. Use clear formatting with HTML bold tags (<b>...</b>), bullet points (•), or line breaks (<br>) so it renders cleanly in the chat UI.
+3. Keep answers under 150 words unless detailed explanations (like coding approaches or STAR breakdowns) are requested.
+4. If asked to navigate or open app sections (like Mock Interview, Resume Studio, or Calendar), encourage them and explain where to click in the app layout.`;
+
+      // Build lightweight chat history payload for contextual multi-turn conversation
+      const contents = [];
+      const recentMessages = this.chatMessages.slice(-6);
+      
+      recentMessages.forEach(msg => {
+        contents.push({
+          role: msg.sender === 'user' ? 'user' : 'model',
+          parts: [{ text: msg.text.replace(/<[^>]*>?/gm, '') }]
+        });
+      });
+
+      // Ensure the user Query is added if not already present
+      if (!contents.length || contents[contents.length - 1].role !== 'user') {
+        contents.push({ role: 'user', parts: [{ text: userQuery }] });
+      }
+
+      const payload = {
+        contents: contents,
+        systemInstruction: { parts: [{ text: systemPrompt }] }
+      };
+
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`);
+      }
+
+      const result = await response.json();
+      const text = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+      if (!text) throw new Error('Invalid response structure');
+
+      return this.formatMarkdownToHtml(text);
+    },
+
+    formatMarkdownToHtml(md) {
+      return md
+        .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
+        .replace(/\*(.*?)\*/g, '<i>$1</i>')
+        .replace(/`([^`]+)`/g, '<code>$1</code>')
+        .replace(/\n\n/g, '<br><br>')
+        .replace(/\n/g, '<br>');
+    },
+
+    escapeHtml(str) {
+      return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    },
+
+    scrollChat() {
+      this.$nextTick(() => {
+        const box = document.getElementById('chat-messages-box');
+        if (box) box.scrollTop = box.scrollHeight;
+      });
+    },
+
+    generateBotResponse(raw) {
+      const q = raw.toLowerCase();
+
+      // Navigation triggers
+      if (q.includes('open coach') || q.includes('mock interview') || q.includes('start interview')) {
+        this.tab = 'coach';
+        return "🎙️ Switching you right now to the <b>AI Mock Interview</b> tab! Select a company from the dropdown to start your behavioral drill.";
+      }
+      if (q.includes('open calendar') || q.includes('view calendar')) {
+        this.tab = 'calendar';
+        return "📅 Switched to your <b>Placement Calendar</b>!";
+      }
+      if (q.includes('open studio') || q.includes('resume template')) {
+        this.tab = 'builder';
+        return "📄 Switched to the <b>PDF Resume Studio</b>! You can change templates and export clean A4 PDFs.";
+      }
+
+      // Motivation & Mental Resilience
+      if (q.includes('motivat') || q.includes('stressed') || q.includes('anxious') || q.includes('fear') || q.includes('nervous') || q.includes('depressed') || q.includes('scared') || q.includes('give up')) {
+        return "🌟 <b>Keep your momentum:</b> Placement season is an endurance race. Rejections are rarely about your worth; they are simply timing. Every OA and interview is free rehearsal. Keep your head high!";
+      }
+
+      // STAR Method Explanation
+      if (q.includes('star') || q.includes('behavioral') || q.includes('hr round') || q.includes('answer questions')) {
+        return "🧠 <b>The STAR Framework:</b><br>" +
+               "• <b>S (Situation):</b> Set the scene in 1-2 concise sentences.<br>" +
+               "• <b>T (Task):</b> Explain your exact responsibility or challenge.<br>" +
+               "• <b>A (Action):</b> The hero phase! Explain the tech, algorithm, or decision you took.<br>" +
+               "• <b>R (Result):</b> Quantify your impact! (e.g. <i>'reduced query latency by 35%'</i>).";
+      }
+
+      // ATS Scoring & Resume Review
+      if (q.includes('ats') || q.includes('score') || q.includes('readiness') || q.includes('audit')) {
+        return `📊 <b>Your ATS Readiness (${this.profileScore}%):</b><br>` +
+               `Currently detected: <b>${this.skills.length} skills</b>.<br>` +
+               `Head to <b>Resume Studio</b> to review recommendations and choose print-ready PDF layouts!`;
+      }
+
+      // Calendar & Placement Schedule
+      if (q.includes('calendar') || q.includes('deadline') || q.includes('schedule') || q.includes('interview date')) {
+        return `📅 You have <b>${this.upcomingDeadlines.length} drive deadlines</b> active.<br>` +
+               `Next cutoff: <b>${this.upcomingDeadlines[0] ? this.upcomingDeadlines[0].title + ' on ' + this.upcomingDeadlines[0].date : 'None'}</b>.`;
+      }
+
+      // Fallback
+      return "🤖 I can assist you with your placement journey!<br>" +
+             "• <b>Resume optimization:</b> Ask <i>'How does ATS scoring work?'</i><br>" +
+             "• <b>Interviews:</b> Ask <i>'Explain the STAR method'</i> or <i>'DSA tips'</i><br>" +
+             "• <b>Schedule:</b> Ask <i>'What are my deadlines?'</i>";
+    }
+  };
+}
+</script>
+</body>
+</html>
